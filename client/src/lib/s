@@ -1,0 +1,60 @@
+// scripts/generate-sw.js
+const { generateSW } = require('workbox-build');
+const path = require('path');
+
+
+async function buildSW() {
+const swDest = path.join(process.cwd(), 'public', 'sw.js');
+
+
+await generateSW({
+swDest,
+globDirectory: path.join(process.cwd(), 'public'),
+globPatterns: [
+'favicon.ico',
+'offline.html',
+'manifest.json',
+'icons/**.*',
+'_next/static/**/*'
+],
+skipWaiting: true,
+clientsClaim: true,
+navigateFallback: '/offline.html',
+runtimeCaching: [
+{
+urlPattern: /^https?:.*\/_next\/static\/.*$/i,
+handler: 'CacheFirst',
+options: {
+cacheName: 'next-static-assets',
+expiration: { maxEntries: 50, maxAgeSeconds: 30 * 24 * 60 * 60 }
+}
+},
+{
+urlPattern: /^https?:.*\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
+handler: 'StaleWhileRevalidate',
+options: {
+cacheName: 'images',
+expiration: { maxEntries: 100, maxAgeSeconds: 60 * 24 * 60 * 60 }
+}
+},
+{
+urlPattern: /^https?:.*\/api\/.*$/i,
+handler: 'NetworkFirst',
+options: {
+cacheName: 'api-cache',
+networkTimeoutSeconds: 10,
+expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 }
+}
+}
+]
+});
+
+
+console.log('✅ sw.js generated to /public/sw.js');
+}
+
+
+buildSW().catch(err => {
+console.error(err);
+process.exit(1);
+});

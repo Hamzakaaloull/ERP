@@ -1,10 +1,56 @@
-// layout.js - Add preload and optimize fonts
+
 "use client";
+
+import { useEffect } from 'react';
 import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
 import CssBaseline from "@mui/material/CssBaseline";
 
 export default function RootLayout({ children }) {
+
+
+  useEffect(() => {
+      if ('serviceWorker' in navigator) {
+        // سجّل فقط في الإنتاج أو على localhost
+        const isLocalhost = Boolean(
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '[::1]' ||
+          window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d?\d)){3}$/)
+        );
+  
+        if (process.env.NODE_ENV === 'production' || isLocalhost) {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => {
+              console.log('Service worker registered:', reg);
+  
+              // استمع لتحديثات الـ SW لإبلاغ المستخدم
+              reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed') {
+                    if (navigator.serviceWorker.controller) {
+                      // هناك نسخة جديدة جاهزة
+                      // يمكنك إظهار UI يخبر المستخدم "نسخة جديدة متوفرة"
+                      console.log('New content available; please refresh.');
+                      // على سبيل المثال: dispatch حدث/تغيير حالة لعرض زر إعادة التحميل
+                    } else {
+                      console.log('Content is cached for offline use.');
+                    }
+                  }
+                });
+              });
+            })
+            .catch(err => {
+              console.error('Service worker registration failed:', err);
+            });
+  
+          // استماع لرسائل من الـ SW (مثال: SKIP_WAITING confirmation)
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            console.log('SW message:', event.data);
+          });
+        }
+      }
+    }, []);
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -28,7 +74,7 @@ export default function RootLayout({ children }) {
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+          {children}
           </ThemeProvider>
       </body>
     </html>
