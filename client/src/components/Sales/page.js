@@ -1,0 +1,797 @@
+"use client"
+import React, { useState, useEffect } from 'react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  MoreVertical, 
+  Eye, 
+  Edit, 
+  Trash2, 
+  Download,
+  ShoppingCart,
+  User,
+  ArrowLeft,
+  FileText,
+  Table as TableIcon
+} from 'lucide-react'
+import CreateSaleDialog from './components/create-sale-dialog'
+import SaleDetailsDialog from './components/sale-details-dialog'
+import EditSaleDialog from './components/edit-sale-dialog'
+
+// Import corrigé pour l'export PDF
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
+const API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL
+
+export default function SalesPage() {
+  const [sales, setSales] = useState([])
+  const [clients, setClients] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [clientFilter, setClientFilter] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [isCreatingSale, setIsCreatingSale] = useState(false)
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [selectedSale, setSelectedSale] = useState(null)
+
+  useEffect(() => {
+    fetchSales()
+    fetchClients()
+  }, [])
+
+  const fetchSales = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      // تصحيح طلب API - إزالة populate غير الضروري
+      const response = await fetch(
+        `${API_URL}/api/sales?populate=client&populate=user&populate=sale_items.product`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      )
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data && data.data) {
+        console.log('Données des ventes reçues:', data)
+        setSales(data.data)
+      } else {
+        console.error('Structure de données inattendue:', data)
+        setSales([])
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des ventes:', error)
+      setSales([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchClients = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/api/clients`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data && data.data) {
+        setClients(data.data)
+      } else {
+        console.error('Structure de données clients inattendue:', data)
+        setClients([])
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des clients:', error)
+      setClients([])
+    }
+  }
+
+  // Fonction d'export PDF
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF()
+      
+      // En-tête du document
+      doc.setFontSize(20)
+      doc.setTextColor(40, 40, 40)
+      doc.text('RAPPORT DES VENTES', 105, 15, { align: 'center' })
+      
+      // Informations de base
+      doc.setFontSize(10)
+      doc.setTextColor(100, 100, 100)
+      doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 25)
+      doc.text(`Total des ventes: ${filteredSales.length}`, 14, 30)
+      doc.text(`Période: ${getDateRangeText()}`, 14, 35)
+      
+      // Préparer les données du tableau
+      const tableData = filteredSales.map(sale => [
+        `#${sale.id}`,
+        sale.client?.name || 'N/A',
+        sale.user?.username || 'N/A',
+        `${(sale.total_amount || 0).toFixed(2)} DH`,
+        `${(sale.paid_amount || 0).toFixed(2)} DH`,
+        `${(sale.remaining_amount || 0).toFixed(2)} DH`,
+        sale.sale_date ? new Date(sale.sale_date).toLocaleDateString('fr-FR') : 'N/A',
+        getStatusText(sale)
+      ])
+      
+      // En-têtes du tableau
+      const headers = [
+        'ID Vente',
+        'Client',
+        'Vendeur',
+        'Total',
+        'Payé',
+        'Reste',
+        'Date',
+        'Statut'
+      ]
+      
+      // Créer le tableau
+      autoTable(doc, {
+        head: [headers],
+        body: tableData,
+        startY: 45,
+        theme: 'grid',
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+        },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: 255,
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [240, 240, 240]
+        },
+        margin: { top: 45 }
+      })
+      
+      // Statistiques en bas
+      const finalY = doc.lastAutoTable.finalY + 10
+      doc.setFontSize(12)
+      doc.setTextColor(40, 40, 40)
+      doc.text('STATISTIQUES', 14, finalY)
+      
+      doc.setFontSize(10)
+      const totalRevenue = filteredSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
+      const totalPaid = filteredSales.reduce((sum, sale) => sum + (sale.paid_amount || 0), 0)
+      const totalRemaining = filteredSales.reduce((sum, sale) => sum + (sale.remaining_amount || 0), 0)
+      
+      doc.text(`Chiffre d'affaires total: ${totalRevenue.toFixed(2)} DH`, 14, finalY + 8)
+      doc.text(`Total payé: ${totalPaid.toFixed(2)} DH`, 14, finalY + 16)
+      doc.text(`Total restant: ${totalRemaining.toFixed(2)} DH`, 14, finalY + 24)
+      
+      // Pied de page
+      doc.setFontSize(8)
+      doc.setTextColor(150, 150, 150)
+      doc.text('Document généré par le système de gestion des ventes', 105, 280, { align: 'center' })
+      
+      // Sauvegarder le PDF
+      doc.save(`ventes_${new Date().toISOString().split('T')[0]}.pdf`)
+    } catch (error) {
+      console.error('Erreur lors de l\'export PDF:', error)
+      alert('Erreur lors de l\'export PDF')
+    }
+  }
+
+  // Fonction d'export CSV
+  const exportToCSV = () => {
+    try {
+      // En-têtes CSV
+      const headers = [
+        'ID Vente',
+        'Client',
+        'Téléphone Client',
+        'Vendeur',
+        'Total (DH)',
+        'Payé (DH)',
+        'Reste (DH)',
+        'Date',
+        'Statut',
+        'Nombre d\'articles'
+      ]
+      
+      // Données CSV
+      const csvData = filteredSales.map(sale => [
+        sale.id,
+        sale.client?.name || 'N/A',
+        sale.client?.phone || 'N/A',
+        sale.user?.username || 'N/A',
+        (sale.total_amount || 0).toFixed(2),
+        (sale.paid_amount || 0).toFixed(2),
+        (sale.remaining_amount || 0).toFixed(2),
+        sale.sale_date ? new Date(sale.sale_date).toLocaleDateString('fr-FR') : 'N/A',
+        getStatusText(sale),
+        sale.sale_items?.length || 0
+      ])
+      
+      // Créer le contenu CSV
+      const csvContent = [
+        headers.join(','),
+        ...csvData.map(row => row.map(field => `"${field}"`).join(','))
+      ].join('\n')
+      
+      // Créer et télécharger le fichier
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `ventes_${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error('Erreur lors de l\'export CSV:', error)
+      alert('Erreur lors de l\'export CSV')
+    }
+  }
+
+  // Fonction utilitaire pour obtenir le texte du statut
+  const getStatusText = (sale) => {
+    const remaining = sale.remaining_amount || 0
+    const paid = sale.paid_amount || 0
+    
+    if (remaining === 0 && paid > 0) {
+      return 'Payée'
+    } else if (paid > 0 && remaining > 0) {
+      return 'Partiellement payée'
+    } else {
+      return 'Impayée'
+    }
+  }
+
+  // Fonction utilitaire pour obtenir le texte de la plage de dates
+  const getDateRangeText = () => {
+    if (dateFrom && dateTo) {
+      return `Du ${new Date(dateFrom).toLocaleDateString('fr-FR')} au ${new Date(dateTo).toLocaleDateString('fr-FR')}`
+    } else if (dateFrom) {
+      return `À partir du ${new Date(dateFrom).toLocaleDateString('fr-FR')}`
+    } else if (dateTo) {
+      return `Jusqu'au ${new Date(dateTo).toLocaleDateString('fr-FR')}`
+    } else {
+      return 'Toute période'
+    }
+  }
+
+  // Fonction pour réinitialiser les filtres de date
+  const resetDateFilters = () => {
+    setDateFrom('')
+    setDateTo('')
+  }
+
+  const deleteSale = async (sale) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette vente ?')) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/api/sales/${sale.documentId || sale.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la suppression')
+      }
+
+      fetchSales()
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error)
+      alert('Erreur lors de la suppression de la vente')
+    }
+  }
+
+  const getStatusBadge = (sale) => {
+    const remaining = sale.remaining_amount || 0
+    const paid = sale.paid_amount || 0
+    
+    if (remaining === 0 && paid > 0) {
+      return <Badge variant="default">Payée</Badge>
+    } else if (paid > 0 && remaining > 0) {
+      return <Badge variant="secondary">Partiellement payée</Badge>
+    } else {
+      return <Badge variant="destructive">Impayée</Badge>
+    }
+  }
+
+  const handleViewDetails = (sale) => {
+    setSelectedSale(sale)
+    setIsDetailsDialogOpen(true)
+  }
+
+  const handleEdit = (sale) => {
+    setSelectedSale(sale)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleSaleSuccess = () => {
+    setIsCreatingSale(false)
+    fetchSales()
+  }
+
+  const handleSaleCancel = () => {
+    setIsCreatingSale(false)
+  }
+
+  const filteredSales = sales.filter(sale => {
+    const matchesSearch = 
+      sale.id?.toString().includes(searchTerm) ||
+      sale.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sale.user?.username?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const remaining = sale.remaining_amount || 0
+    const paid = sale.paid_amount || 0
+    
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'paid' && remaining === 0 && paid > 0) ||
+      (statusFilter === 'partial' && paid > 0 && remaining > 0) ||
+      (statusFilter === 'unpaid' && paid === 0)
+
+    const matchesClient = clientFilter === 'all' || sale.client?.id?.toString() === clientFilter
+
+    // Filtre par date
+    let matchesDate = true
+    if (dateFrom || dateTo) {
+      const saleDate = sale.sale_date ? new Date(sale.sale_date) : null
+      
+      if (dateFrom && saleDate) {
+        const fromDate = new Date(dateFrom)
+        fromDate.setHours(0, 0, 0, 0)
+        if (saleDate < fromDate) {
+          matchesDate = false
+        }
+      }
+      
+      if (dateTo && saleDate) {
+        const toDate = new Date(dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        if (saleDate > toDate) {
+          matchesDate = false
+        }
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesClient && matchesDate
+  })
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-3 text-muted-foreground">Chargement des ventes...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isCreatingSale) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="p-4 md:p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsCreatingSale(false)}
+                    className="gap-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Retour
+                  </Button>
+                  <h1 className="text-2xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                    Nouvelle Vente
+                  </h1>
+                </div>
+                <p className="text-lg md:text-xl text-muted-foreground">
+                  Créez une nouvelle vente et gérez le paiement en temps réel
+                </p>
+              </div>
+            </div>
+
+            <CreateSaleDialog 
+              onSuccess={handleSaleSuccess}
+              onCancel={handleSaleCancel}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="space-y-2">
+            <h1 className="text-2xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Ventes
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground">
+              Gestion des ventes et point de vente (POS)
+            </p>
+          </div>
+
+          <Button 
+            size="lg" 
+            className="gap-2 text-sm md:text-base"
+            onClick={() => setIsCreatingSale(true)}
+          >
+            <Plus className="h-4 w-4 md:h-5 md:w-5" />
+            Nouvelle Vente
+          </Button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Total Ventes</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl md:text-2xl font-bold">{sales.length}</div>
+              <p className="text-xs text-muted-foreground">Ventes totales</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Chiffre d'Affaires</CardTitle>
+              <span className="text-muted-foreground text-xs">DH</span>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl md:text-2xl font-bold">
+                {sales.reduce((total, sale) => total + (sale.total_amount || 0), 0).toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">Total encaissé</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">En Attente</CardTitle>
+              <Badge variant="destructive" className="text-xs">DH</Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl md:text-2xl font-bold text-destructive">
+                {sales.reduce((total, sale) => total + (sale.remaining_amount || 0), 0).toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">Montant impayé</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium">Taux Paiement</CardTitle>
+              <Badge variant="default" className="text-xs">%</Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl md:text-2xl font-bold">
+                {sales.length > 0 
+                  ? ((sales.reduce((total, sale) => total + (sale.paid_amount || 0), 0) / 
+                      Math.max(sales.reduce((total, sale) => total + (sale.total_amount || 0), 0), 1)) * 100).toFixed(1)
+                  : 0
+                }%
+              </div>
+              <p className="text-xs text-muted-foreground">Taux de recouvrement</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg md:text-xl">Filtres et Recherche</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher vente, client..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-background text-sm md:text-base"
+                />
+              </div>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="bg-background text-sm md:text-base">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Statut paiement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-sm md:text-base">Tous les statuts</SelectItem>
+                  <SelectItem value="paid" className="text-sm md:text-base">Payée</SelectItem>
+                  <SelectItem value="partial" className="text-sm md:text-base">Partiellement payée</SelectItem>
+                  <SelectItem value="unpaid" className="text-sm md:text-base">Impayée</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={clientFilter} onValueChange={setClientFilter}>
+                <SelectTrigger className="bg-background text-sm md:text-base">
+                  <User className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Tous clients" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-sm md:text-base">Tous les clients</SelectItem>
+                  {clients.map(client => (
+                    <SelectItem key={client.id} value={client.id.toString()} className="text-sm md:text-base">
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Filtres de date */}
+              <div className="space-y-2">
+                <Label htmlFor="dateFrom" className="text-xs">De</Label>
+                <Input
+                  id="dateFrom"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="bg-background text-sm md:text-base"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dateTo" className="text-xs">À</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="dateTo"
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="bg-background text-sm md:text-base flex-1"
+                  />
+                  {(dateFrom || dateTo) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetDateFilters}
+                      className="h-10 px-2"
+                      title="Réinitialiser les dates"
+                    >
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sales Table */}
+        <Card className="border shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-4">
+              <div>
+                <CardTitle className="text-lg md:text-xl">Historique des Ventes</CardTitle>
+                <CardDescription className="text-sm md:text-base">
+                  {filteredSales.length} vente(s) trouvée(s) sur {sales.length} au total
+                  {(dateFrom || dateTo) && (
+                    <span className="ml-2 text-primary">
+                      • {getDateRangeText()}
+                    </span>
+                  )}
+                </CardDescription>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 text-sm md:text-base">
+                    <Download className="h-4 w-4" />
+                    Exporter
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={exportToPDF} className="text-sm">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Exporter en PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToCSV} className="text-sm">
+                    <TableIcon className="h-4 w-4 mr-2" />
+                    Exporter en CSV
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead className="text-xs md:text-sm">ID Vente</TableHead>
+                    <TableHead className="text-xs md:text-sm">Client</TableHead>
+                    <TableHead className="text-xs md:text-sm">Vendeur</TableHead>
+                    <TableHead className="text-right text-xs md:text-sm">Total</TableHead>
+                    <TableHead className="text-right text-xs md:text-sm">Payé</TableHead>
+                    <TableHead className="text-right text-xs md:text-sm">Reste</TableHead>
+                    <TableHead className="text-xs md:text-sm">Date</TableHead>
+                    <TableHead className="text-xs md:text-sm">Statut</TableHead>
+                    <TableHead className="text-right text-xs md:text-sm">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredSales.map((sale) => (
+                    <TableRow key={sale.id} className="group hover:bg-muted/50 transition-colors">
+                      <TableCell className="font-medium">
+                        <div className="font-semibold text-xs md:text-sm">#{sale.id}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {sale.sale_items?.length || 0} article(s)
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                          <span className="text-xs md:text-sm">{sale.client?.name || 'Client non spécifié'}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs md:text-sm text-muted-foreground">
+                          {sale.user?.username || 'N/A'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-xs md:text-sm">
+                        {sale.total_amount ? `${sale.total_amount.toFixed(2)} DH` : '0.00 DH'}
+                      </TableCell>
+                      <TableCell className="text-right text-green-600 font-semibold text-xs md:text-sm">
+                        {sale.paid_amount ? `${sale.paid_amount.toFixed(2)} DH` : '0.00 DH'}
+                      </TableCell>
+                      <TableCell className="text-right text-red-600 font-semibold text-xs md:text-sm">
+                        {sale.remaining_amount ? `${sale.remaining_amount.toFixed(2)} DH` : '0.00 DH'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs md:text-sm">
+                          {sale.sale_date ? new Date(sale.sale_date).toLocaleDateString('fr-FR') : 'N/A'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {sale.sale_date ? new Date(sale.sale_date).toLocaleTimeString('fr-FR') : ''}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(sale)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Ouvrir le menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40 md:w-48">
+                            <DropdownMenuItem onClick={() => handleViewDetails(sale)} className="text-xs md:text-sm">
+                              <Eye className="h-4 w-4 mr-2" />
+                              Voir détails
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEdit(sale)} className="text-xs md:text-sm">
+                              <Edit className="h-4 w-4 mr-2" />
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => deleteSale(sale)}
+                              className="text-destructive focus:text-destructive text-xs md:text-sm"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {filteredSales.length === 0 && (
+              <div className="text-center py-8 md:py-12">
+                <ShoppingCart className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground mx-auto mb-3 md:mb-4" />
+                <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">
+                  Aucune vente trouvée
+                </h3>
+                <p className="text-muted-foreground mb-4 md:mb-6 max-w-sm mx-auto text-sm md:text-base">
+                  {searchTerm || statusFilter !== 'all' || clientFilter !== 'all' || dateFrom || dateTo
+                    ? 'Aucune vente ne correspond à vos critères de recherche.'
+                    : 'Commencez par créer votre première vente.'
+                  }
+                </p>
+                {(searchTerm || statusFilter !== 'all' || clientFilter !== 'all' || dateFrom || dateTo) ? (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSearchTerm('')
+                      setStatusFilter('all')
+                      setClientFilter('all')
+                      setDateFrom('')
+                      setDateTo('')
+                    }}
+                    className="text-sm md:text-base"
+                  >
+                    Réinitialiser les filtres
+                  </Button>
+                ) : (
+                  <Button onClick={() => setIsCreatingSale(true)} className="text-sm md:text-base">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Créer une vente
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Dialogs */}
+        <SaleDetailsDialog
+          sale={selectedSale}
+          open={isDetailsDialogOpen}
+          onOpenChange={setIsDetailsDialogOpen}
+        />
+
+        <EditSaleDialog
+          sale={selectedSale}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          onSuccess={() => {
+            setIsEditDialogOpen(false)
+            fetchSales()
+          }}
+        />
+      </div>
+    </div>
+  )
+}

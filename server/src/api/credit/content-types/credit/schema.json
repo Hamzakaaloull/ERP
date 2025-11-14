@@ -1,0 +1,44 @@
+{
+  "kind": "collectionType",
+  "collectionName": "credits",
+  "info": {
+    "singularName": "credit",
+    "pluralName": "credits",
+    "displayName": "Credit"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "amount": {
+      "type": "decimal"
+    },
+    "paid_amount": {
+      "type": "decimal",
+      "default": 0
+    },
+    "due_date": {
+      "type": "date"
+    },
+    "statut": {
+      "type": "enumeration",
+      "enum": [
+        "active",
+        "closed"
+      ]
+    },
+    "client": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::client.client",
+      "inversedBy": "credits"
+    },
+    "payment_histories": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::payment-history.payment-history",
+      "mappedBy": "credit"
+    }
+  }
+}

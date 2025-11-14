@@ -1,0 +1,53 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sales",
+  "info": {
+    "singularName": "sale",
+    "pluralName": "sales",
+    "displayName": "Sale"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "total_amount": {
+      "type": "decimal"
+    },
+    "paid_amount": {
+      "type": "decimal",
+      "default": 0
+    },
+    "remaining_amount": {
+      "type": "decimal",
+      "default": 0
+    },
+    "sale_date": {
+      "type": "datetime"
+    },
+    "client": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::client.client",
+      "inversedBy": "sales"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "sales"
+    },
+    "sale_items": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::sale-item.sale-item",
+      "mappedBy": "sale"
+    },
+    "payment_histories": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::payment-history.payment-history",
+      "mappedBy": "sale"
+    }
+  }
+}

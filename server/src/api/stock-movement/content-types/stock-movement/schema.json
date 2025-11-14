@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "stock_movements",
+  "info": {
+    "singularName": "stock-movement",
+    "pluralName": "stock-movements",
+    "displayName": "Stock_Movement"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "IN",
+        "OUT",
+        "ADJUST"
+      ]
+    },
+    "quantity": {
+      "type": "integer"
+    },
+    "reference": {
+      "type": "string"
+    },
+    "date": {
+      "type": "datetime"
+    },
+    "product": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::product.product",
+      "inversedBy": "stock_movements"
+    },
+    "description": {
+      "type": "string"
+    }
+  }
+}

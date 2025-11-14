@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
 import CssBaseline from "@mui/material/CssBaseline";
 
+import { Toaster } from "sonner"
 export default function RootLayout({ children }) {
 
 
@@ -58,11 +59,12 @@ export default function RootLayout({ children }) {
         <link rel="icon" type="image/png" sizes='32x32' href="favicon/favicon-32x32.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
         <meta name="theme-color" content="#ffffff" />
-        <title>Gestion des Stagiaires</title>
+        <title>Gestion des Pannes</title>
         {/* Preload critical resources */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
+        {/* i want to add manifest */}
+        <link rel="manifest" href="/manifest.json" />
         {/* Add loading strategy for LCP image */}
         <link rel="preload" href="/img/army.jpg" as="image" />
       </head>
@@ -75,6 +77,13 @@ export default function RootLayout({ children }) {
             disableTransitionOnChange
           >
           {children}
+          <Toaster 
+          position="top-right"
+          theme="system"
+          richColors
+          closeButton
+          duration={4000}
+        />
           </ThemeProvider>
       </body>
     </html>

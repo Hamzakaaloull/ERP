@@ -1,7 +1,7 @@
 // app-sidebar.jsx
 "use client"
 import React, { useEffect, useState } from "react"
-import { Command, BookOpen, Users, NotepadText, Gavel, Command as Cmd, Hospital, Library, LifeBuoy, Frame, ShieldUser, Group } from "lucide-react"
+import { Command, BookOpen, Users, NotepadText, Gavel, Command as Cmd, Hospital, Library, LifeBuoy, Frame, ShieldUser, Group, Wrench, Settings } from "lucide-react"
 import Image from "next/image"
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -18,11 +18,10 @@ import {
 } from "@/components/ui/sidebar"
 
 /**
- * API base -- ضعها في .env.local كـ NEXT_PUBLIC_API_URL أو غيّر القيمة هنا
+ * API base
  */
 const API = process.env.NEXT_PUBLIC_STRAPI_API_URL;
-
-/** قراءة JWT من localStorage تحت المفتاح "token" */
+/** قراءة JWT من localStorage */
 function getJwt() {
   if (typeof window === "undefined") return null
   try {
@@ -34,20 +33,16 @@ function getJwt() {
 }
 
 /**
- * محاولة استخراج رابط الصورة من مختلف الأشكال التي قد تُرجعها Strapi
- * لاحظ: لا نستخدم .attributes هنا
+ * استخراج رابط الصورة
  */
 function resolveAvatarUrl(user) {
   if (!user) return null
 
   const candidates = [
-    // profile object (populate=profile) قد يكون: { data: { url } } أو { url }
     user.profile?.data?.url,
     user.profile?.url,
-    // صيغ تحتوي على formats
     user.profile?.formats?.thumbnail?.url,
     user.profile?.data?.formats?.thumbnail?.url,
-    // بعض الحالات نُخزن الصورة مباشرة في حقل avatar
     user.avatar,
     user.image,
     user.profile,
@@ -58,10 +53,8 @@ function resolveAvatarUrl(user) {
     if (typeof val === "string") {
       if (val.startsWith("/")) return API.replace(/\/$/, "") + val
       if (val.startsWith("http")) return val
-      // إن كان نصًا لكنه ليس رابطًا، نتجاهل
       continue
     }
-    // إن كان object، حاول استخراج الحقول الشائعة
     if (typeof val === "object") {
       const url =
         val.url ||
@@ -84,81 +77,69 @@ export function AppSidebar(props) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { activeComponent, setActiveComponent } = useNavigation()
+  const [theme, setTheme] = useState("light");
 
-  // جميع عناصر التنقل الأساسية
+  
+
+  // ميع عناصر التنقل الأساسية
   const allNavMainItems = [
-    { 
-      title: "Pedagogique", 
-      url: "#", 
-      icon: Hospital, 
-      isActive: activeComponent === "Pedagogique",
-      onClick: () => setActiveComponent("Pedagogique")
-    },
-    { 
-      title: "Users", 
-      url: "#", 
-      icon: ShieldUser, 
-      isActive: activeComponent === "Users",
-      onClick: () => setActiveComponent("Users")
-    },
-    { 
-      title: "Specialite", 
-      url: "#", 
-      icon: Library, 
-      isActive: activeComponent === "Specialite",
-      onClick: () => setActiveComponent("Specialite")
-    },
-    { 
-      title: "Stage", 
-      url: "#", 
-      icon: BookOpen, 
-      isActive: activeComponent === "Stage",
-      onClick: () => setActiveComponent("Stage")
-    },
-    { 
-      title: "Brigade", 
+     { 
+      title: "Tableau de Bord", 
       url: "#", 
       icon: Group, 
-      isActive: activeComponent === "Brigade",
-      onClick: () => setActiveComponent("Brigade")
-    },
-    { 
-      title: "Stagiaires", 
+      isActive: activeComponent === "TableauDeBord",
+      onClick: () => setActiveComponent("TableauDeBord")
+    },{ 
+      title: "Sales", 
       url: "#", 
-      icon: Users, 
-      isActive: activeComponent === "Stagiaires",
-      onClick: () => setActiveComponent("Stagiaires")
+      icon: ShieldUser, 
+      isActive: activeComponent === "Sales",
+      onClick: () => setActiveComponent("Sales")
+    },{ 
+      title: "Debts", 
+      url: "#", 
+      icon: ShieldUser, 
+      isActive: activeComponent === "Debts",
+      onClick: () => setActiveComponent("Debts")
+    },,{ 
+      title: "Stock Mouvements", 
+      url: "#", 
+      icon: ShieldUser, 
+      isActive: activeComponent === "Stock_Mouvements",
+      onClick: () => setActiveComponent("Stock_Mouvements")
     },
-    { 
-      title: "Remarque", 
+      { 
+      title: "Products et Categories", 
       url: "#", 
       icon: NotepadText, 
-      isActive: activeComponent === "Remarque",
-      onClick: () => setActiveComponent("Remarque")
+      isActive: activeComponent === "References",
+      onClick: () => setActiveComponent("References")
     },
-    { 
-      title: "Penition", 
+     { 
+      title: "Exporte et rapports", 
       url: "#", 
-      icon: Gavel, 
-      isActive: activeComponent === "Penition",
-      onClick: () => setActiveComponent("Penition")
+      icon: ShieldUser, 
+      isActive: activeComponent === "Rapports",
+      onClick: () => setActiveComponent("Rapports")
     },
-    { 
-      title: "Permission", 
+   { 
+      title: "Utilisateurs", 
       url: "#", 
-      icon: Cmd, 
-      isActive: activeComponent === "Permission",
-      onClick: () => setActiveComponent("Permission")
+      icon: ShieldUser, 
+      isActive: activeComponent === "Utilisateurs",
+      onClick: () => setActiveComponent("Utilisateurs")
     },
+    
     { 
-      title: "Consultation", 
+      title: "Paramètres", 
       url: "#", 
-      icon: Hospital, 
-      isActive: activeComponent === "Consultation",
-      onClick: () => setActiveComponent("Consultation")
+      icon: Settings, 
+      isActive: activeComponent === "Parametres",
+      onClick: () => setActiveComponent("Parametres")
     },
   ]
 
+ 
   // تحديد عناصر التنقل بناءً على دور المستخدم
   const getNavItems = () => {
     if (!userRaw) return []
@@ -167,16 +148,10 @@ export function AppSidebar(props) {
     
     if (userRole === "admin") {
       return allNavMainItems
-    } else if (userRole === "public") {
-      return allNavMainItems.filter(item => 
-        item.title !== "Pedagogique" && item.title !== "Users"
-      )
-    } else if (userRole === "chef_cellule") {
-      return allNavMainItems.filter(item => item.title === "Pedagogique")
-    } else if (userRole === "doctor") {
-      return allNavMainItems.filter(item => item.title === "Consultation")
+    } else if (userRole === "maintenance_technician") {
+      return technicianNavItems
     } else {
-      return allNavMainItems
+      return []
     }
   }
 
@@ -200,12 +175,11 @@ export function AppSidebar(props) {
       const jwt = getJwt()
       if (!jwt) {
         setLoading(false)
-        setError("No JWT token found in localStorage (key: \"token\")")
+        setError("Aucun token JWT trouvé dans le localStorage")
         return
       }
 
       try {
-        // نطلب populate للـ profile و role
         const res = await fetch(`${API.replace(/\/$/, "")}/api/users/me?populate[profile]=*&populate[role]=*`, {
           headers: {
             Authorization: `Bearer ${jwt}`,
@@ -218,9 +192,7 @@ export function AppSidebar(props) {
         }
 
         const json = await res.json()
-        console.log("Fetched user:", json)
-        // محاولة استخراج المستخدم من response
-        // Strapi قد يرجع المستخدم مباشرة أو داخل data
+        console.log("Utilisateur récupéré:", json)
         const user = json?.data ? json.data : json
         if (mounted) {
           setUserRaw(user)
@@ -228,22 +200,18 @@ export function AppSidebar(props) {
           // تعيين المكون الافتراضي بناءً على دور المستخدم
           const userRole = user.role?.name || user.role
           if (userRole === "admin") {
-            setActiveComponent("Users")
-          } else if (userRole === "public") {
-            setActiveComponent("Specialite")
-          } else if (userRole === "chef_cellule") {
-            setActiveComponent("Pedagogique")
-          } else if (userRole === "doctor") {
-            setActiveComponent("Consultation")
+            setActiveComponent("TableauDeBord")
+          } else if (userRole === "maintenance_technician") {
+            setActiveComponent("Maintenance")
           } else {
-            setActiveComponent("Users")
+            setActiveComponent("Utilisateurs")
           }
           
           setLoading(false)
         }
       } catch (err) {
         if (mounted) {
-          setError(err.message || "Failed to fetch user")
+          setError(err.message || "Échec de la récupération de l'utilisateur")
           setLoading(false)
         }
       }
@@ -259,8 +227,8 @@ export function AppSidebar(props) {
   const data = React.useMemo(() => {
     const fallback = {
       user: {
-        name: "Guest",
-        email: "guest@example.com",
+        name: "Invité",
+        email: "invite@example.com",
         avatar: "https://media.istockphoto.com/id/1337144146/vector/default-avatar-profile-icon-vector.jpg?s=612x612&w=0&k=20&c=BIbFwuv7FxTWvh5S3vB6bkT0Qv8Vn8N5Ffseq84ClGI=",
         raw: null,
       },
@@ -268,7 +236,7 @@ export function AppSidebar(props) {
 
     if (!userRaw) return fallback
 
-    const name = userRaw.username || userRaw.name || userRaw.fullName || userRaw.email || "User"
+    const name = userRaw.username || userRaw.name || userRaw.fullName || userRaw.email || "Utilisateur"
     const email = userRaw.email || ""
     const avatar = resolveAvatarUrl(userRaw) || "/avatars/default.jpg"
 
@@ -289,11 +257,17 @@ export function AppSidebar(props) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a href="#">
-                <Image src="/img/FAR.png"  className="mr-2"   width={30} height={50} quality={100} alt="far"  />
-               {/* <img src="https://upload.wikimedia.org/wikipedia/commons/a/a1/Moroccan_Armed_Force.png" alt="Logo" className="w-6 h-auto object-contain mr-1" /> */}
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium ">Gestion</span>
-                  <span className="truncate text-sm ">Des Stagiaires</span>
+                <Image
+                 src="/img/Fatini_logo_dark.png"
+                  alt="Saint Gobain Logo"
+                  width={65}
+                  height={50}
+                  quality={100}
+                  className="object-contain  light:invert dark:invert-0"
+                />
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">ERP</span>
+                  <span className="truncate text-sm">Gestion Stock</span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -308,7 +282,7 @@ export function AppSidebar(props) {
 
       <SidebarFooter>
         <NavUser user={data.user} />
-        {loading ? <div className="text-xs mt-2 px-3">Loading user…</div> : null}
+        {loading ? <div className="text-xs mt-2 px-3">Chargement de l'utilisateur…</div> : null}
         {error ? <div className="text-xs text-red-500 mt-2 px-3">{error}</div> : null}
       </SidebarFooter>
     </Sidebar>

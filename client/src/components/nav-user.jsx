@@ -1,12 +1,8 @@
 "use client"
 
 import {
-  BadgeCheck,
-  Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
-  Sparkles,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
@@ -17,7 +13,6 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -55,7 +50,7 @@ export function NavUser({
         })
       }
     } catch (error) {
-      console.error("Error updating user status:", error)
+      console.error("Erreur lors de la mise à jour du statut utilisateur:", error)
     } finally {
       // تنظيف localStorage وإعادة التوجيه
       localStorage.removeItem("token")

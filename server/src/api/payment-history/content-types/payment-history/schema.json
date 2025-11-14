@@ -1,0 +1,44 @@
+{
+  "kind": "collectionType",
+  "collectionName": "payment_histories",
+  "info": {
+    "singularName": "payment-history",
+    "pluralName": "payment-histories",
+    "displayName": "Payment_history"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "sale": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::sale.sale",
+      "inversedBy": "payment_histories"
+    },
+    "amount": {
+      "type": "decimal"
+    },
+    "payment_date": {
+      "type": "datetime"
+    },
+    "note": {
+      "type": "string"
+    },
+    "Payment_history": {
+      "type": "enumeration",
+      "enum": [
+        "cash",
+        "card",
+        "transfer"
+      ]
+    },
+    "credit": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::credit.credit",
+      "inversedBy": "payment_histories"
+    }
+  }
+}

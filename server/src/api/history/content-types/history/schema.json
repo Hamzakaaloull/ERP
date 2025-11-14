@@ -1,0 +1,44 @@
+{
+  "kind": "collectionType",
+  "collectionName": "histories",
+  "info": {
+    "singularName": "history",
+    "pluralName": "histories",
+    "displayName": "History"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "action_type": {
+      "type": "enumeration",
+      "enum": [
+        "create",
+        "update",
+        "delete"
+      ]
+    },
+    "entity_name": {
+      "type": "string"
+    },
+    "entity_id": {
+      "type": "integer"
+    },
+    "old_data": {
+      "type": "json"
+    },
+    "new_data": {
+      "type": "json"
+    },
+    "action_date": {
+      "type": "datetime"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "histories"
+    }
+  }
+}

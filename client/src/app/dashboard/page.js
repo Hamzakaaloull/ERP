@@ -20,17 +20,15 @@ import {
 import ModeToggle from "@/components/button-tugle"
 
 // Lazy load components
-const Stagiaires = lazy(() => import("../../components/Stagiaire/page"))
-const UsersPage = lazy(() => import("../../components/Users/page"))
-const Stage = lazy(() => import("../../components/Stage/page"))
-const Remarque = lazy(() => import("../../components/Remarque/page"))
-const Penition = lazy(() => import("../../components/Penition/page"))
-const Permission = lazy(() => import("../../components/Permission/page.js"))
-const Consultation = lazy(() => import("../../components/Consultation/page"))
-const Specialite = lazy(() => import("../../components/Specialite/page"))
-const Brigade = lazy(() => import("../../components/brigade/page"))
+const UtilisateursPage = lazy(() => import("../../components/Users/page"))
+const TableauDeBord = lazy(() => import("../../components/TableauDeBord/page"))
+const Rapports = lazy(() => import("../../components/Rapports/page"))
+const References = lazy(() => import("../../components/References/page"))
+const Parametres = lazy(() => import("../../components/Parametres/page"))
+const Sales = lazy(() => import("../../components/Sales/page"))
+const Stock_Mouvements = lazy(() => import("../../components/Stock_Movements/page"))
+const Debts = lazy(() => import("../../components/Debts/page"))
 const Assistance = lazy(() => import("../../components/Assistance/page"))
-const Pedagogique = lazy(() => import("../../components/Pedagogique/page"))
 
 // Composant de chargement
 const LoadingFallback = () => (
@@ -38,6 +36,8 @@ const LoadingFallback = () => (
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
   </div>
 )
+
+
 
 function MainContent() {
   const { activeComponent } = useNavigation()
@@ -69,54 +69,21 @@ function MainContent() {
   }, [])
 
   const renderActiveComponent = () => {
-    // Vérifications de sécurité basées sur le rôle
     if (userRole === "admin") {
       // Admin peut tout voir
       switch (activeComponent) {
-        case 'Users': return <UsersPage />
-        case 'Stagiaires': return <Stagiaires />
-        case 'Stage': return <Stage />
-        case 'Remarque': return <Remarque />
-        case 'Penition': return <Penition />
-        case 'Permission': return <Permission />
-        case 'Consultation': return <Consultation />
-        case 'Specialite': return <Specialite />
-        case 'Brigade': return <Brigade />
+        case 'Utilisateurs': return <UtilisateursPage />
+        case 'Sales': return <Sales />
+        case 'Stock_Mouvements': return <Stock_Mouvements />
+        case 'Debts': return <Debts />
+        case 'TableauDeBord': return <TableauDeBord />
+        case 'Rapports': return <Rapports />
+        case 'References': return <References />
+        case 'Parametres': return <Parametres />
         case 'Assistance': return <Assistance />
-        case 'Pedagogique': return <Pedagogique />
-        default: return <UsersPage />
+        default: return <UtilisateursPage />
       }
-    } else if (userRole === "public") {
-      // Public ne peut pas voir Pedagogique et Users
-      if (activeComponent === "Pedagogique" || activeComponent === "Users") {
-        return <Specialite />
-      }
-      switch (activeComponent) {
-        case 'Stagiaires': return <Stagiaires />
-        case 'Stage': return <Stage />
-        case 'Remarque': return <Remarque />
-        case 'Penition': return <Penition />
-        case 'Permission': return <Permission />
-        case 'Consultation': return <Consultation />
-        case 'Specialite': return <Specialite />
-        case 'Brigade': return <Brigade />
-        case 'Assistance': return <Assistance />
-        default: return <Specialite />
-      }
-    } else if (userRole === "chef_cellule") {
-      // Chef cellule ne peut voir que Pedagogique
-      if (activeComponent !== "Pedagogique") {
-        return <Pedagogique />
-      }
-      return <Pedagogique />
-    } else if (userRole === "doctor") {
-      // Doctor ne peut voir que Consultation
-      if (activeComponent !== "Consultation") {
-        return <Consultation />
-      }
-      return <Consultation />
     } else {
-      // Rôle non reconnu
       return <div>Rôle non autorisé</div>
     }
   }
@@ -135,7 +102,17 @@ function MainContent() {
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
-                <BreadcrumbPage>{activeComponent}</BreadcrumbPage>
+                <BreadcrumbPage>
+                  {activeComponent === 'Utilisateurs' && 'Utilisateurs'}
+                  {activeComponent === 'Sales' && 'Sales'}
+                  {activeComponent === 'Debts' && 'Debts'}
+                  {activeComponent === 'Stock_Mouvements' && 'Stock Mouvements'}
+                  {activeComponent === 'TableauDeBord' && 'Tableau de Bord'}
+                  {activeComponent === 'Rapports' && 'Statistiques et Rapports'}
+                  {activeComponent === 'References' && 'Gestion des Références'}
+                  {activeComponent === 'Parametres' && 'Paramètres'}
+                  {activeComponent === 'Assistance' && 'Assistance'}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -153,6 +130,7 @@ function MainContent() {
 
 export default function Page() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [userRole, setUserRole] = useState(null)
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -160,6 +138,25 @@ export default function Page() {
       window.location.href = "/"
     } else {
       setIsAuthenticated(true)
+      // Récupérer le rôle de l'utilisateur
+      const fetchUserRole = async () => {
+        try {
+          const API = process.env.NEXT_PUBLIC_STRAPI_API_URL;
+          const res = await fetch(`${API.replace(/\/$/, "")}/api/users/me?populate[role]=*`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+          if (res.ok) {
+            const userData = await res.json()
+            const user = userData?.data ? userData.data : userData
+            setUserRole(user.role?.name || user.role)
+          }
+        } catch (error) {
+          console.error("Erreur lors de la récupération du rôle:", error)
+        }
+      }
+      fetchUserRole()
     }
   }, [])
 
@@ -167,6 +164,7 @@ export default function Page() {
     return null
   }
 
+  // إذا كان المستخدم admin، عرض الداشبورد الكامل
   return (
     <NavigationProvider>
       <SidebarProvider>

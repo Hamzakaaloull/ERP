@@ -430,28 +430,29 @@ export interface AdminUser extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiBrigadeNameBrigadeName extends Struct.CollectionTypeSchema {
-  collectionName: 'brigade_names';
+export interface ApiCategoryCategory extends Struct.CollectionTypeSchema {
+  collectionName: 'categories';
   info: {
-    displayName: 'brigadeName';
-    pluralName: 'brigade-names';
-    singularName: 'brigade-name';
+    displayName: 'Category';
+    pluralName: 'categories';
+    singularName: 'category';
   };
   options: {
     draftAndPublish: true;
   };
   attributes: {
-    brigades: Schema.Attribute.Relation<'oneToMany', 'api::brigade.brigade'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::brigade-name.brigade-name'
+      'api::category.category'
     > &
       Schema.Attribute.Private;
-    nom: Schema.Attribute.String;
+    name: Schema.Attribute.String;
+    products: Schema.Attribute.Relation<'oneToMany', 'api::product.product'>;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -459,56 +460,293 @@ export interface ApiBrigadeNameBrigadeName extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface ApiBrigadeBrigade extends Struct.CollectionTypeSchema {
-  collectionName: 'brigades';
+export interface ApiClientClient extends Struct.CollectionTypeSchema {
+  collectionName: 'clients';
   info: {
-    displayName: 'brigade';
-    pluralName: 'brigades';
-    singularName: 'brigade';
+    displayName: 'Client';
+    pluralName: 'clients';
+    singularName: 'client';
   };
   options: {
     draftAndPublish: true;
   };
   attributes: {
-    brigade_name: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::brigade-name.brigade-name'
-    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    effectif: Schema.Attribute.Integer;
+    credits: Schema.Attribute.Relation<'oneToMany', 'api::credit.credit'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::brigade.brigade'
+      'api::client.client'
     > &
       Schema.Attribute.Private;
-    nom: Schema.Attribute.String;
+    name: Schema.Attribute.String;
+    phone: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
-    specialite: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::specialite.specialite'
-    >;
-    stage: Schema.Attribute.Relation<'manyToOne', 'api::stage.stage'>;
-    stagiaires: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::stagiaire.stagiaire'
-    >;
+    sales: Schema.Attribute.Relation<'oneToMany', 'api::sale.sale'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    year: Schema.Attribute.Date;
   };
 }
 
-export interface ApiConsultationConsultation
+export interface ApiCreditCredit extends Struct.CollectionTypeSchema {
+  collectionName: 'credits';
+  info: {
+    displayName: 'Credit';
+    pluralName: 'credits';
+    singularName: 'credit';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    amount: Schema.Attribute.Decimal;
+    client: Schema.Attribute.Relation<'manyToOne', 'api::client.client'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    due_date: Schema.Attribute.Date;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::credit.credit'
+    > &
+      Schema.Attribute.Private;
+    paid_amount: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    payment_histories: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::payment-history.payment-history'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    statut: Schema.Attribute.Enumeration<['active', 'closed']>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiHistoryHistory extends Struct.CollectionTypeSchema {
+  collectionName: 'histories';
+  info: {
+    displayName: 'History';
+    pluralName: 'histories';
+    singularName: 'history';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    action_date: Schema.Attribute.DateTime;
+    action_type: Schema.Attribute.Enumeration<['create', 'update', 'delete']>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    entity_id: Schema.Attribute.Integer;
+    entity_name: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::history.history'
+    > &
+      Schema.Attribute.Private;
+    new_data: Schema.Attribute.JSON;
+    old_data: Schema.Attribute.JSON;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiJobJob extends Struct.CollectionTypeSchema {
+  collectionName: 'jobs';
+  info: {
+    displayName: 'job';
+    pluralName: 'jobs';
+    singularName: 'job';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::job.job'> &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String;
+    price: Schema.Attribute.Decimal;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiPaymentHistoryPaymentHistory
   extends Struct.CollectionTypeSchema {
-  collectionName: 'consultations';
+  collectionName: 'payment_histories';
   info: {
-    displayName: 'consultation';
-    pluralName: 'consultations';
-    singularName: 'consultation';
+    displayName: 'Payment_history';
+    pluralName: 'payment-histories';
+    singularName: 'payment-history';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    amount: Schema.Attribute.Decimal;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    credit: Schema.Attribute.Relation<'manyToOne', 'api::credit.credit'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::payment-history.payment-history'
+    > &
+      Schema.Attribute.Private;
+    note: Schema.Attribute.String;
+    payment_date: Schema.Attribute.DateTime;
+    Payment_history: Schema.Attribute.Enumeration<['cash', 'card', 'transfer']>;
+    publishedAt: Schema.Attribute.DateTime;
+    sale: Schema.Attribute.Relation<'manyToOne', 'api::sale.sale'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiProductProduct extends Struct.CollectionTypeSchema {
+  collectionName: 'products';
+  info: {
+    displayName: 'Product';
+    pluralName: 'products';
+    singularName: 'product';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    category: Schema.Attribute.Relation<'manyToOne', 'api::category.category'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::product.product'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String;
+    photo: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    price: Schema.Attribute.Decimal;
+    price_achat: Schema.Attribute.Decimal;
+    publishedAt: Schema.Attribute.DateTime;
+    sale_items: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::sale-item.sale-item'
+    >;
+    stock_movements: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::stock-movement.stock-movement'
+    >;
+    stock_quantity: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    unit: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiSaleItemSaleItem extends Struct.CollectionTypeSchema {
+  collectionName: 'sale_items';
+  info: {
+    displayName: 'Sale_Item';
+    pluralName: 'sale-items';
+    singularName: 'sale-item';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::sale-item.sale-item'
+    > &
+      Schema.Attribute.Private;
+    product: Schema.Attribute.Relation<'manyToOne', 'api::product.product'>;
+    publishedAt: Schema.Attribute.DateTime;
+    quantity: Schema.Attribute.Integer;
+    sale: Schema.Attribute.Relation<'manyToOne', 'api::sale.sale'>;
+    total_price: Schema.Attribute.Decimal;
+    unit_price: Schema.Attribute.Decimal;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface ApiSaleSale extends Struct.CollectionTypeSchema {
+  collectionName: 'sales';
+  info: {
+    displayName: 'Sale';
+    pluralName: 'sales';
+    singularName: 'sale';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    client: Schema.Attribute.Relation<'manyToOne', 'api::client.client'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<'oneToMany', 'api::sale.sale'> &
+      Schema.Attribute.Private;
+    paid_amount: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    payment_histories: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::payment-history.payment-history'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    remaining_amount: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    sale_date: Schema.Attribute.DateTime;
+    sale_items: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::sale-item.sale-item'
+    >;
+    total_amount: Schema.Attribute.Decimal;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
+export interface ApiStockMovementStockMovement
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'stock_movements';
+  info: {
+    displayName: 'Stock_Movement';
+    pluralName: 'stock-movements';
+    singularName: 'stock-movement';
   };
   options: {
     draftAndPublish: true;
@@ -518,93 +756,30 @@ export interface ApiConsultationConsultation
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     date: Schema.Attribute.DateTime;
-    file: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    description: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::consultation.consultation'
+      'api::stock-movement.stock-movement'
     > &
       Schema.Attribute.Private;
-    note: Schema.Attribute.Text;
+    product: Schema.Attribute.Relation<'manyToOne', 'api::product.product'>;
     publishedAt: Schema.Attribute.DateTime;
-    stagiaire: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::stagiaire.stagiaire'
-    >;
+    quantity: Schema.Attribute.Integer;
+    reference: Schema.Attribute.String;
+    type: Schema.Attribute.Enumeration<['IN', 'OUT', 'ADJUST']>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
   };
 }
 
-export interface ApiInstructeurInstructeur extends Struct.CollectionTypeSchema {
-  collectionName: 'instructeurs';
+export interface ApiTransportTransport extends Struct.CollectionTypeSchema {
+  collectionName: 'transports';
   info: {
-    displayName: 'instructeur';
-    pluralName: 'instructeurs';
-    singularName: 'instructeur';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    adress: Schema.Attribute.String;
-    birth_day: Schema.Attribute.Date;
-    cin: Schema.Attribute.String;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    first_name: Schema.Attribute.String;
-    grade: Schema.Attribute.Enumeration<
-      [
-        'Soldat de 2e classe',
-        'Soldat de 1re classe',
-        'Caporal',
-        'Caporal-chef',
-        'Sergent',
-        'Sergent-chef',
-        'Sergent-major',
-        'Adjudant',
-        'Adjudant-chef',
-        'Sous-lieutenant',
-        'Lieutenant',
-        'Capitaine',
-        'Commandant',
-        'Lieutenant-colonel',
-        'Colonel (plein)',
-      ]
-    >;
-    last_name: Schema.Attribute.String;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::instructeur.instructeur'
-    > &
-      Schema.Attribute.Private;
-    mle: Schema.Attribute.String;
-    phone: Schema.Attribute.Integer;
-    profile: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
-    publishedAt: Schema.Attribute.DateTime;
-    remark_instructeurs: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::remark-instructeur.remark-instructeur'
-    >;
-    specialite: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::specialite.specialite'
-    >;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiPermisionPermision extends Struct.CollectionTypeSchema {
-  collectionName: 'permisions';
-  info: {
-    displayName: 'permision';
-    pluralName: 'permisions';
-    singularName: 'permision';
+    displayName: 'transport';
+    pluralName: 'transports';
+    singularName: 'transport';
   };
   options: {
     draftAndPublish: true;
@@ -613,326 +788,15 @@ export interface ApiPermisionPermision extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    duration: Schema.Attribute.Integer;
-    end_date: Schema.Attribute.Date;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
-      'api::permision.permision'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    stagiaires: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::stagiaire.stagiaire'
-    >;
-    start_date: Schema.Attribute.Date;
-    type: Schema.Attribute.Enumeration<
-      [
-        'permission exceptionnelle',
-        'permission de repos',
-        'Permission cong\u00E9',
-      ]
-    >;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiPunitionPunition extends Struct.CollectionTypeSchema {
-  collectionName: 'punitions';
-  info: {
-    displayName: 'punition';
-    pluralName: 'punitions';
-    singularName: 'punition';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    date: Schema.Attribute.Date;
-    description: Schema.Attribute.Text;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::punition.punition'
-    > &
-      Schema.Attribute.Private;
-    motif: Schema.Attribute.String;
-    publishedAt: Schema.Attribute.DateTime;
-    stagiaires: Schema.Attribute.Relation<
-      'manyToMany',
-      'api::stagiaire.stagiaire'
-    >;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiRemarkInstructeurRemarkInstructeur
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'remark_instructeurs';
-  info: {
-    displayName: 'remark_instructeur';
-    pluralName: 'remark-instructeurs';
-    singularName: 'remark-instructeur';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    content: Schema.Attribute.Text;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    date: Schema.Attribute.Date;
-    end_time: Schema.Attribute.Time;
-    instructeur: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::instructeur.instructeur'
-    >;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::remark-instructeur.remark-instructeur'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    start_time: Schema.Attribute.Time;
-    subject: Schema.Attribute.Relation<'manyToOne', 'api::subject.subject'>;
-    type: Schema.Attribute.Enumeration<['negative', 'positive']>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiRemarqueRemarque extends Struct.CollectionTypeSchema {
-  collectionName: 'remarques';
-  info: {
-    displayName: 'remarque';
-    pluralName: 'remarques';
-    singularName: 'remarque';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    content: Schema.Attribute.Text;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    date: Schema.Attribute.Date;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::remarque.remarque'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    result: Schema.Attribute.Text;
-    stagiaire: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::stagiaire.stagiaire'
-    >;
-    type: Schema.Attribute.Enumeration<['Positive', 'Negative']>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiSpecialiteSpecialite extends Struct.CollectionTypeSchema {
-  collectionName: 'specialites';
-  info: {
-    displayName: 'specialite';
-    pluralName: 'specialites';
-    singularName: 'specialite';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    brigades: Schema.Attribute.Relation<'oneToMany', 'api::brigade.brigade'>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
-    instructeurs: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::instructeur.instructeur'
-    >;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::specialite.specialite'
+      'api::transport.transport'
     > &
       Schema.Attribute.Private;
     name: Schema.Attribute.String;
+    price: Schema.Attribute.Decimal;
     publishedAt: Schema.Attribute.DateTime;
-    stages: Schema.Attribute.Relation<'manyToMany', 'api::stage.stage'>;
-    stagiaires: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::stagiaire.stagiaire'
-    >;
-    subjects: Schema.Attribute.Relation<'oneToMany', 'api::subject.subject'>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiStageStage extends Struct.CollectionTypeSchema {
-  collectionName: 'stages';
-  info: {
-    displayName: 'stage';
-    pluralName: 'stages';
-    singularName: 'stage';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    brigades: Schema.Attribute.Relation<'oneToMany', 'api::brigade.brigade'>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
-    end_date: Schema.Attribute.Date;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<'oneToMany', 'api::stage.stage'> &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String;
-    publishedAt: Schema.Attribute.DateTime;
-    specialites: Schema.Attribute.Relation<
-      'manyToMany',
-      'api::specialite.specialite'
-    >;
-    stagiaires: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::stagiaire.stagiaire'
-    >;
-    start_date: Schema.Attribute.Date;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiStagiaireStagiaire extends Struct.CollectionTypeSchema {
-  collectionName: 'stagiaires';
-  info: {
-    displayName: 'stagiaire';
-    pluralName: 'stagiaires';
-    singularName: 'stagiaire';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    brigade: Schema.Attribute.Relation<'manyToOne', 'api::brigade.brigade'>;
-    cin: Schema.Attribute.String;
-    consultations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::consultation.consultation'
-    >;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    date_naissance: Schema.Attribute.Date;
-    first_name: Schema.Attribute.String;
-    grade: Schema.Attribute.Enumeration<
-      [
-        'Soldat de 2e classe',
-        'Soldat de 1re classe',
-        'Caporal',
-        'Caporal-chef',
-        'Sergent',
-        'Sergent-chef',
-        'Sergent-major',
-        'Adjudant',
-        'Adjudant-chef',
-        'Sous-lieutenant',
-        'Lieutenant',
-        'Capitaine',
-        'Commandant',
-        'Lieutenant-colonel',
-        'Colonel (plein)',
-      ]
-    >;
-    groupe_sanguaine: Schema.Attribute.String;
-    last_name: Schema.Attribute.String;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::stagiaire.stagiaire'
-    > &
-      Schema.Attribute.Private;
-    mle: Schema.Attribute.String;
-    permision: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::permision.permision'
-    >;
-    phone: Schema.Attribute.String;
-    profile: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
-    publishedAt: Schema.Attribute.DateTime;
-    punitions: Schema.Attribute.Relation<
-      'manyToMany',
-      'api::punition.punition'
-    >;
-    remarques: Schema.Attribute.Relation<'oneToMany', 'api::remarque.remarque'>;
-    specialite: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::specialite.specialite'
-    >;
-    stage: Schema.Attribute.Relation<'manyToOne', 'api::stage.stage'>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface ApiSubjectSubject extends Struct.CollectionTypeSchema {
-  collectionName: 'subjects';
-  info: {
-    displayName: 'subject';
-    pluralName: 'subjects';
-    singularName: 'subject';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  attributes: {
-    content: Schema.Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios',
-      true
-    >;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
-    is_militaire: Schema.Attribute.Boolean;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::subject.subject'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    remark_instructeurs: Schema.Attribute.Relation<
-      'oneToMany',
-      'api::remark-instructeur.remark-instructeur'
-    >;
-    specialite: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::specialite.specialite'
-    >;
-    title: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1407,6 +1271,7 @@ export interface PluginUsersPermissionsUser
       Schema.Attribute.SetMinMaxLength<{
         minLength: 6;
       }>;
+    histories: Schema.Attribute.Relation<'oneToMany', 'api::history.history'>;
     isActive: Schema.Attribute.Boolean;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -1427,6 +1292,7 @@ export interface PluginUsersPermissionsUser
       'manyToOne',
       'plugin::users-permissions.role'
     >;
+    sales: Schema.Attribute.Relation<'oneToMany', 'api::sale.sale'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1450,18 +1316,17 @@ declare module '@strapi/strapi' {
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
-      'api::brigade-name.brigade-name': ApiBrigadeNameBrigadeName;
-      'api::brigade.brigade': ApiBrigadeBrigade;
-      'api::consultation.consultation': ApiConsultationConsultation;
-      'api::instructeur.instructeur': ApiInstructeurInstructeur;
-      'api::permision.permision': ApiPermisionPermision;
-      'api::punition.punition': ApiPunitionPunition;
-      'api::remark-instructeur.remark-instructeur': ApiRemarkInstructeurRemarkInstructeur;
-      'api::remarque.remarque': ApiRemarqueRemarque;
-      'api::specialite.specialite': ApiSpecialiteSpecialite;
-      'api::stage.stage': ApiStageStage;
-      'api::stagiaire.stagiaire': ApiStagiaireStagiaire;
-      'api::subject.subject': ApiSubjectSubject;
+      'api::category.category': ApiCategoryCategory;
+      'api::client.client': ApiClientClient;
+      'api::credit.credit': ApiCreditCredit;
+      'api::history.history': ApiHistoryHistory;
+      'api::job.job': ApiJobJob;
+      'api::payment-history.payment-history': ApiPaymentHistoryPaymentHistory;
+      'api::product.product': ApiProductProduct;
+      'api::sale-item.sale-item': ApiSaleItemSaleItem;
+      'api::sale.sale': ApiSaleSale;
+      'api::stock-movement.stock-movement': ApiStockMovementStockMovement;
+      'api::transport.transport': ApiTransportTransport;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;
