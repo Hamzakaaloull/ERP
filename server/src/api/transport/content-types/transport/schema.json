@@ -16,6 +16,12 @@
     },
     "price": {
       "type": "decimal"
+    },
+    "sale": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::sale.sale",
+      "mappedBy": "transport"
     }
   }
 }

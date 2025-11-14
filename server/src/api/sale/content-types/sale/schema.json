@@ -48,6 +48,18 @@
       "relation": "oneToMany",
       "target": "api::payment-history.payment-history",
       "mappedBy": "sale"
+    },
+    "jobs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::job.job",
+      "mappedBy": "sale"
+    },
+    "transport": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::transport.transport",
+      "inversedBy": "sale"
     }
   }
 }

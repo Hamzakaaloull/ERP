@@ -16,6 +16,12 @@
     },
     "price": {
       "type": "decimal"
+    },
+    "sale": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::sale.sale",
+      "inversedBy": "jobs"
     }
   }
 }

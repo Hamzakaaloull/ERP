@@ -1,6 +1,6 @@
 
 "use client";
-
+import { MotionConfig } from 'motion/react';
 import { useEffect } from 'react';
 import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
@@ -55,9 +55,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="img/favicon.png" />
-        <link rel="icon" type="image/png" sizes='32x32' href="favicon/favicon-32x32.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
+        <link rel="icon" href="icons/icon-48x48.png" />
+        <link rel="icon" type="image/png" sizes='32x32' href="icons/icon-72x72.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-96x96.png" />
         <meta name="theme-color" content="#ffffff" />
         <title>Gestion des Pannes</title>
         {/* Preload critical resources */}
@@ -69,6 +69,7 @@ export default function RootLayout({ children }) {
         <link rel="preload" href="/img/army.jpg" as="image" />
       </head>
       <body>
+        <MotionConfig reducedMotion="user">
         <CssBaseline />
         <ThemeProvider
             attribute="class"
@@ -85,6 +86,7 @@ export default function RootLayout({ children }) {
           duration={4000}
         />
           </ThemeProvider>
+          </MotionConfig>
       </body>
     </html>
   );

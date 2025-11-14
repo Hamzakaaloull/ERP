@@ -12,7 +12,9 @@ import {
   User,
   Package,
   CreditCard,
-  QrCode
+  QrCode,
+  Truck,
+  Briefcase
 } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL
@@ -273,6 +275,18 @@ export default function PrintInvoice({ sale, onClose }) {
                 background: #f5f5f5;
                 border: 1px solid #ddd;
               }
+              .service-item {
+                background: white;
+                padding: 6px;
+                margin: 4px 0;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 9px;
+              }
+              .bilingual-service {
+                display: flex;
+                justify-content: space-between;
+              }
             }
             body {
               font-family: 'Arial', 'Helvetica Neue', sans-serif;
@@ -464,6 +478,18 @@ export default function PrintInvoice({ sale, onClose }) {
               display: flex;
               justify-content: space-between;
             }
+            .service-item {
+              background: white;
+              padding: 6px;
+              margin: 4px 0;
+              border: 1px solid #ddd;
+              border-radius: 4px;
+              font-size: 9px;
+            }
+            .bilingual-service {
+              display: flex;
+              justify-content: space-between;
+            }
             .footer {
               text-align: center;
               margin-top: 15px;
@@ -572,8 +598,6 @@ export default function PrintInvoice({ sale, onClose }) {
             >
               {/* En-tête du ticket */}
               <div className="header">
-                {/* <div className="company-name">FATINI STORE</div> */}
-               
                 <img src="/img/Fatini_logo_ligth.png" alt="Fatini Store" className="mx-auto mb-2" style={{width: '120px', height: 'auto'}} />
                 <div className="company-address">OULED ILLOUL • Souk Sebt • Morocco</div>
                 <div className="company-address-ar">أولاد إيلول • سوق السبت • المغرب</div>
@@ -582,7 +606,6 @@ export default function PrintInvoice({ sale, onClose }) {
                 
                 <div className="invoice-title">SALE RECEIPT / إيصال بيع</div>
                 
-                
                 <div className={`status-badge ${statusInfo.class} inline-block mt-2`}>
                   {statusInfo.text}
                 </div>
@@ -590,7 +613,6 @@ export default function PrintInvoice({ sale, onClose }) {
 
               {/* Informations de base */}
               <div className="section-title">INVOICE INFO / معلومات الفاتورة</div>
-              
               
               <div className="info-item">
                 <span className="info-label">Ticket N° / رقم التذكرة:</span>
@@ -618,7 +640,6 @@ export default function PrintInvoice({ sale, onClose }) {
               {/* Informations client */}
               <div className="section-title">CLIENT INFO / معلومات العميل</div>
            
-              
               <div className="info-item">
                 <span className="info-label">Client / العميل:</span>
                 <span className="info-value">{sale.client?.name || 'Non spécifié / غير محدد'}</span>
@@ -634,7 +655,6 @@ export default function PrintInvoice({ sale, onClose }) {
 
               {/* Articles */}
               <div className="section-title">PRODUCTS / المنتجات</div>
-              
               
               <table>
                 <thead>
@@ -659,12 +679,46 @@ export default function PrintInvoice({ sale, onClose }) {
 
               <div className="divider"></div>
 
+              {/* Services Additionnels - Transport et Job */}
+              {(sale.transport || sale.jobs) && (
+                <>
+                  <div className="section-title">ADDITIONAL SERVICES / خدمات إضافية</div>
+                  
+                  <div className="space-y-2">
+                    {sale.transport && (
+                      <div className="service-item">
+                        <div className="bilingual-service">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-3 w-3" />
+                            <span>Transport: {sale.transport.name}</span>
+                          </div>
+                          <div className="font-semibold">+{sale.transport.price?.toFixed(2)} DH</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {sale.jobs && (
+                      <div className="service-item">
+                        <div className="bilingual-service">
+                          <div className="flex items-center gap-2">
+                            <Briefcase className="h-3 w-3" />
+                            <span>Job: {sale.jobs.name}</span>
+                          </div>
+                          <div className="font-semibold">+{sale.jobs.price?.toFixed(2)} DH</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="divider"></div>
+                </>
+              )}
+
               {/* Historique des Paiements */}
               {paymentHistory.length > 0 && (
                 <>
                   <div className="section-title">PAYMENT HISTORY / سجل الدفع</div>
                  
-                  
                   <div className="space-y-2">
                     {paymentHistory.map((payment, index) => (
                       <div key={index} className="payment-item">
@@ -692,15 +746,37 @@ export default function PrintInvoice({ sale, onClose }) {
               <div className="totals">
                 <div className="section-title">SUMMARY / الملخص</div>
             
-                
+                <div className="total-row">
+                  <span>Subtotal Products / المنتجات:</span>
+                  <span>
+                    {sale.sale_items?.reduce((total, item) => total + (item.total_price || 0), 0)?.toFixed(2) || '0.00'} DH
+                  </span>
+                </div>
+
+                {sale.transport && (
+                  <div className="total-row" style={{color: '#1e40af'}}>
+                    <span>Transport / النقل:</span>
+                    <span>+{sale.transport.price?.toFixed(2) || '0.00'} DH</span>
+                  </div>
+                )}
+
+                {sale.jobs && (
+                  <div className="total-row" style={{color: '#166534'}}>
+                    <span>Job / العمل:</span>
+                    <span>+{sale.jobs.price?.toFixed(2) || '0.00'} DH</span>
+                  </div>
+                )}
+
                 <div className="total-row">
                   <span>Subtotal / المجموع الجزئي:</span>
                   <span>{sale.total_amount?.toFixed(2) || '0.00'} DH</span>
                 </div>
+                
                 <div className="total-row" style={{color: '#16a34a'}}>
                   <span>Paid / المدفوع:</span>
                   <span>+{sale.paid_amount?.toFixed(2) || '0.00'} DH</span>
                 </div>
+                
                 <div className="total-row total-main" style={{
                   color: (sale.remaining_amount || 0) > 0 ? '#dc2626' : '#16a34a'
                 }}>
@@ -712,7 +788,17 @@ export default function PrintInvoice({ sale, onClose }) {
                 </div>
               </div>
 
-            
+              {/* Footer */}
+              <div className="footer">
+                <div className="thank-you">Thank you for your business! / شكرا لتعاملكم!</div>
+                <div>For any inquiries, please contact us / للاستفسارات، يرجى الاتصال بنا</div>
+                <div className="barcode-area">
+                  <div>Scan for details / امسح للتفاصيل</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '2px' }}>
+                    {ticketCode}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

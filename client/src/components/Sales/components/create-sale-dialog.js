@@ -1,4 +1,3 @@
-
 "use client"
 import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
@@ -36,7 +35,9 @@ import {
   Printer,
   X,
   Edit,
-  Save
+  Save,
+  Truck,
+  Briefcase
 } from 'lucide-react'
 import PrintInvoice from './print-invoice'
 
@@ -173,6 +174,12 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
   const [editingPriceIndex, setEditingPriceIndex] = useState(null)
   const [tempPrice, setTempPrice] = useState('')
 
+  // États pour transport et job comme nouvelles entrées
+  const [transportName, setTransportName] = useState('')
+  const [transportPrice, setTransportPrice] = useState('')
+  const [jobName, setJobName] = useState('')
+  const [jobPrice, setJobPrice] = useState('')
+
   useEffect(() => {
     fetchProducts()
     fetchClients()
@@ -181,7 +188,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
 
   useEffect(() => {
     calculateTotals()
-  }, [cart, discount])
+  }, [cart, discount, transportPrice, jobPrice])
 
   useEffect(() => {
     if (paidAmount) {
@@ -198,6 +205,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
     }
   }, [selectedProduct])
 
+  // Charger les données
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('token')
@@ -259,7 +267,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
   const handleClientAdded = (newClient) => {
     setClients(prev => [...prev, newClient])
     setSelectedClient(newClient.id.toString())
-    fetchClients() // Rafraîchir la liste pour être sûr
+    fetchClients()
   }
 
   const filteredProducts = products.filter(product =>
@@ -268,10 +276,13 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
   )
 
   const calculateTotals = () => {
-    const newSubtotal = cart.reduce((total, item) => total + (item.unit_price * item.quantity), 0)
+    const productsSubtotal = cart.reduce((total, item) => total + (item.unit_price * item.quantity), 0)
+    const transportCost = parseFloat(transportPrice) || 0
+    const jobCost = parseFloat(jobPrice) || 0
+    
+    const newSubtotal = productsSubtotal + transportCost + jobCost
     setSubtotal(newSubtotal)
     
-    // Pas de TVA - total direct avec remise
     const newGrandTotal = newSubtotal - discount
     setGrandTotal(Math.max(0, newGrandTotal))
   }
@@ -279,7 +290,6 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
   const addToCart = () => {
     if (!selectedProduct || quantity <= 0) return
 
-    // Vérifier le stock
     if (quantity > selectedProduct.stock_quantity) {
       if (!confirm(`Stock insuffisant! Stock disponible: ${selectedProduct.stock_quantity}. Voulez-vous continuer?`)) {
         return
@@ -289,14 +299,12 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
     const existingItemIndex = cart.findIndex(item => item.product.id === selectedProduct.id)
 
     if (existingItemIndex >= 0) {
-      // Mettre à jour la quantité
       const updatedCart = [...cart]
       updatedCart[existingItemIndex].quantity += quantity
       updatedCart[existingItemIndex].unit_price = parseFloat(customPrice) || selectedProduct.price
       updatedCart[existingItemIndex].total_price = updatedCart[existingItemIndex].unit_price * updatedCart[existingItemIndex].quantity
       setCart(updatedCart)
     } else {
-      // Ajouter nouveau produit
       const cartItem = {
         product: selectedProduct,
         quantity: quantity,
@@ -306,7 +314,6 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
       setCart([...cart, cartItem])
     }
 
-    // Réinitialiser
     setSelectedProduct(null)
     setQuantity(1)
     setCustomPrice('')
@@ -350,8 +357,8 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
   }
 
   const handleCompleteSale = async (printInvoice = false) => {
-    if (cart.length === 0) {
-      alert('Le panier est vide!')
+    if (cart.length === 0 && !transportName && !jobName) {
+      alert('Le panier est vide et aucun service (transport/job) n\'est ajouté!')
       return
     }
 
@@ -442,6 +449,42 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
         })
       }
 
+      // Créer un transport si rempli
+      if (transportName) {
+        const transportData = {
+          sale: saleId,
+          name: transportName,
+          price: parseFloat(transportPrice) || 0
+        }
+
+        await fetch(`${API_URL}/api/transports`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ data: transportData })
+        })
+      }
+
+      // Créer un job si rempli
+      if (jobName) {
+        const jobData = {
+          sale: saleId,
+          name: jobName,
+          price: parseFloat(jobPrice) || 0
+        }
+
+        await fetch(`${API_URL}/api/jobs`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ data: jobData })
+        })
+      }
+
       // Créer un mouvement de stock
       for (const item of cart) {
         const stockMovementData = {
@@ -473,6 +516,8 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
           paid_amount: paid,
           remaining_amount: remaining,
           client: selectedClient,
+          transport: transportName || null,
+          job: jobName || null,
           items: cart.map(item => ({
             product: item.product.name,
             quantity: item.quantity,
@@ -508,7 +553,15 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
           quantity: item.quantity,
           unit_price: item.unit_price,
           total_price: item.total_price
-        }))
+        })),
+        transport: transportName ? {
+          name: transportName,
+          price: parseFloat(transportPrice) || 0
+        } : null,
+        job: jobName ? {
+          name: jobName,
+          price: parseFloat(jobPrice) || 0
+        } : null
       }
 
       setLastCreatedSale(saleForPrint)
@@ -525,7 +578,6 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
     } finally {
       setLoading(false)
     }
-  
   }
 
   const handlePrintAndClose = () => {
@@ -533,12 +585,22 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
     onSuccess()
   }
 
-  // Produits à afficher - tous les produits ou produits filtrés
+  const clearTransport = () => {
+    setTransportName('')
+    setTransportPrice('')
+  }
+
+  const clearJob = () => {
+    setJobName('')
+    setJobPrice('')
+  }
+
   const productsToShow = searchTerm ? filteredProducts : products
 
   return (
     <>
-<div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 h-full overflow-y-auto p-6">        {/* Colonne Gauche - Recherche et Panier */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 h-full overflow-y-auto p-6">
+        {/* Colonne Gauche - Recherche et Panier */}
         <div className="xl:col-span-2 space-y-4 md:space-y-6">
           {/* Recherche de Produits */}
           <Card>
@@ -562,7 +624,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
                 />
               </div>
 
-              {/* Liste des Produits avec défilement */}
+              {/* Liste des Produits */}
               <div className="border rounded-lg max-h-80 overflow-y-auto">
                 {productsToShow.map((product) => (
                   <div
@@ -863,6 +925,130 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
             </CardContent>
           </Card>
 
+          {/* Services - Transport et Job */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                <Briefcase className="h-5 w-5 md:h-6 md:w-6" />
+                Services Additionnels
+              </CardTitle>
+              <CardDescription className="text-sm md:text-base">
+                Ajoutez des services de transport ou de job
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Transport */}
+              <div className="space-y-4 p-4 border rounded-lg ">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm md:text-lg flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    Transport
+                  </Label>
+                  {transportName && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearTransport}
+                      className="h-6 w-6 p-0 text-red-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="transportName" className="text-sm">Nom du Transport</Label>
+                    <Input
+                      id="transportName"
+                      value={transportName}
+                      onChange={(e) => setTransportName(e.target.value)}
+                      className="bg-background text-sm md:text-base"
+                      placeholder="Ex: Livraison à domicile, Transport rapide..."
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="transportPrice" className="text-sm">Prix du Transport (DH)</Label>
+                    <Input
+                      id="transportPrice"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={transportPrice}
+                      onChange={(e) => setTransportPrice(e.target.value)}
+                      className="bg-background text-sm md:text-base"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                {transportName && (
+                  <div className="p-3 bg-blue-100 border border-blue-200 rounded">
+                    <div className="text-blue-800 text-sm font-medium">
+                      Transport: {transportName} - {parseFloat(transportPrice || 0).toFixed(2)} DH
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Job */}
+              <div className="space-y-4 p-4 border rounded-lg ">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm md:text-lg flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    Job
+                  </Label>
+                  {jobName && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearJob}
+                      className="h-6 w-6 p-0 text-red-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="jobName" className="text-sm">Nom du Job</Label>
+                    <Input
+                      id="jobName"
+                      value={jobName}
+                      onChange={(e) => setJobName(e.target.value)}
+                      className="bg-background text-sm md:text-base"
+                      placeholder="Ex: Installation, Réparation, Montage..."
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="jobPrice" className="text-sm">Prix du Job (DH)</Label>
+                    <Input
+                      id="jobPrice"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={jobPrice}
+                      onChange={(e) => setJobPrice(e.target.value)}
+                      className="bg-background text-sm md:text-base"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                {jobName && (
+                  <div className="p-3 bg-green-100 border border-green-200 rounded">
+                    <div className="text-green-800 text-sm font-medium">
+                      Job: {jobName} - {parseFloat(jobPrice || 0).toFixed(2)} DH
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Résumé de la Vente */}
           <Card>
             <CardHeader className="pb-3">
@@ -871,13 +1057,36 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex justify-between text-sm md:text-lg">
+                  <span>Sous-total Produits:</span>
+                  <span className="font-semibold">
+                    {cart.reduce((total, item) => total + (item.unit_price * item.quantity), 0).toFixed(2)} DH
+                  </span>
+                </div>
+                
+                {transportName && (
+                  <div className="flex justify-between text-sm md:text-lg text-blue-600">
+                    <span>Transport:</span>
+                    <span className="font-semibold">+{(parseFloat(transportPrice) || 0).toFixed(2)} DH</span>
+                  </div>
+                )}
+                
+                {jobName && (
+                  <div className="flex justify-between text-sm md:text-lg text-green-600">
+                    <span>Job:</span>
+                    <span className="font-semibold">+{(parseFloat(jobPrice) || 0).toFixed(2)} DH</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-sm md:text-lg">
                   <span>Sous-total:</span>
                   <span className="font-semibold">{subtotal.toFixed(2)} DH</span>
                 </div>
+                
                 <div className="flex justify-between text-sm md:text-lg">
                   <span>Remise:</span>
                   <span className="font-semibold text-red-600">-{discount.toFixed(2)} DH</span>
                 </div>
+                
                 <div className="border-t pt-3 flex justify-between text-lg md:text-xl font-bold">
                   <span>Total:</span>
                   <span>{grandTotal.toFixed(2)} DH</span>
@@ -985,7 +1194,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
               <div className="space-y-3 md:space-y-4">
                 <Button 
                   onClick={() => handleCompleteSale(true)}
-                  disabled={loading || cart.length === 0 || !selectedClient}
+                  disabled={loading || (cart.length === 0 && !transportName && !jobName) || !selectedClient}
                   className="w-full h-12 md:h-14 text-sm md:text-xl"
                   size="lg"
                 >
@@ -1004,7 +1213,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
 
                 <Button 
                   onClick={() => handleCompleteSale(false)}
-                  disabled={loading || cart.length === 0 || !selectedClient}
+                  disabled={loading || (cart.length === 0 && !transportName && !jobName) || !selectedClient}
                   variant="outline"
                   className="w-full h-10 md:h-12 text-xs md:text-lg"
                 >
@@ -1021,16 +1230,22 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
                   Annuler
                 </Button>
 
-                {cart.length > 0 && (
+                {(cart.length > 0 || transportName || jobName) && (
                   <div className="text-center">
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => setCart([])}
+                      onClick={() => {
+                        setCart([])
+                        setTransportName('')
+                        setTransportPrice('')
+                        setJobName('')
+                        setJobPrice('')
+                      }}
                       disabled={loading}
                       className="text-xs md:text-lg"
                     >
-                      Vider le Panier
+                      Tout Effacer
                     </Button>
                   </div>
                 )}

@@ -584,6 +584,7 @@ export interface ApiJobJob extends Struct.CollectionTypeSchema {
     name: Schema.Attribute.String;
     price: Schema.Attribute.Decimal;
     publishedAt: Schema.Attribute.DateTime;
+    sale: Schema.Attribute.Relation<'manyToOne', 'api::sale.sale'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -714,6 +715,7 @@ export interface ApiSaleSale extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    jobs: Schema.Attribute.Relation<'oneToMany', 'api::job.job'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::sale.sale'> &
       Schema.Attribute.Private;
@@ -730,6 +732,10 @@ export interface ApiSaleSale extends Struct.CollectionTypeSchema {
       'api::sale-item.sale-item'
     >;
     total_amount: Schema.Attribute.Decimal;
+    transport: Schema.Attribute.Relation<
+      'oneToOne',
+      'api::transport.transport'
+    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -797,6 +803,7 @@ export interface ApiTransportTransport extends Struct.CollectionTypeSchema {
     name: Schema.Attribute.String;
     price: Schema.Attribute.Decimal;
     publishedAt: Schema.Attribute.DateTime;
+    sale: Schema.Attribute.Relation<'oneToOne', 'api::sale.sale'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

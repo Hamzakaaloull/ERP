@@ -1,7 +1,8 @@
+
 // app-sidebar.jsx
 "use client"
 import React, { useEffect, useState } from "react"
-import { Command, BookOpen, Users, NotepadText, Gavel, Command as Cmd, Hospital, Library, LifeBuoy, Frame, ShieldUser, Group, Wrench, Settings } from "lucide-react"
+import { Command, BookOpen, Users, NotepadText, Gavel, Command as Cmd, Hospital, Library, LifeBuoy, Frame, ShieldUser, Group, Wrench, Settings ,  Weight  ,BanknoteArrowUp , Warehouse } from "lucide-react"
 import Image from "next/image"
 import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
@@ -16,6 +17,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useTheme } from "@/hooks/useTheme"
+import { motion, AnimatePresence } from 'motion/react'
 
 /**
  * API base
@@ -77,10 +80,9 @@ export function AppSidebar(props) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { activeComponent, setActiveComponent } = useNavigation()
-  const [theme, setTheme] = useState("light");
-
+  const theme = useTheme()
   
-
+   
   // ميع عناصر التنقل الأساسية
   const allNavMainItems = [
      { 
@@ -92,19 +94,19 @@ export function AppSidebar(props) {
     },{ 
       title: "Sales", 
       url: "#", 
-      icon: ShieldUser, 
+      icon: Weight, 
       isActive: activeComponent === "Sales",
       onClick: () => setActiveComponent("Sales")
     },{ 
       title: "Debts", 
       url: "#", 
-      icon: ShieldUser, 
+      icon: BanknoteArrowUp, 
       isActive: activeComponent === "Debts",
       onClick: () => setActiveComponent("Debts")
-    },,{ 
+    },{ 
       title: "Stock Mouvements", 
       url: "#", 
-      icon: ShieldUser, 
+      icon: Warehouse, 
       isActive: activeComponent === "Stock_Mouvements",
       onClick: () => setActiveComponent("Stock_Mouvements")
     },
@@ -115,13 +117,7 @@ export function AppSidebar(props) {
       isActive: activeComponent === "References",
       onClick: () => setActiveComponent("References")
     },
-     { 
-      title: "Exporte et rapports", 
-      url: "#", 
-      icon: ShieldUser, 
-      isActive: activeComponent === "Rapports",
-      onClick: () => setActiveComponent("Rapports")
-    },
+    
    { 
       title: "Utilisateurs", 
       url: "#", 
@@ -250,41 +246,169 @@ export function AppSidebar(props) {
     }
   }, [userRaw])
 
+  const sidebarVariants = {
+    hidden: { x: -100, opacity: 0 },
+    visible: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 80,
+        damping: 20,
+        duration: 0.6
+      }
+    }
+  }
+
+  const headerVariants = {
+    hidden: { y: -20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15,
+        delay: 0.1
+      }
+    }
+  }
+
+  const logoVariants = {
+    hidden: { scale: 0.8, rotate: -10 },
+    visible: {
+      scale: 1,
+      rotate: 0,
+      transition: {
+        type: "spring",
+        stiffness: 200,
+        damping: 15,
+        delay: 0.2
+      }
+    },
+    hover: {
+      scale: 1.05,
+      rotate: [0, -2, 2, 0],
+      transition: {
+        duration: 0.5
+      }
+    }
+  }
+
+  const contentVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        delayChildren: 0.3,
+        staggerChildren: 0.08
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { x: -20, opacity: 0 },
+    visible: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 12
+      }
+    }
+  }
+
+  const footerVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 80,
+        damping: 15,
+        delay: 0.5
+      }
+    }
+  }
+
   return (
-    <Sidebar variant="inset" {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <a href="#">
-                <Image
-                 src="/img/Fatini_logo_dark.png"
-                  alt="Saint Gobain Logo"
-                  width={65}
-                  height={50}
-                  quality={100}
-                  className="object-contain  light:invert dark:invert-0"
-                />
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">ERP</span>
-                  <span className="truncate text-sm">Gestion Stock</span>
-                </div>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
+    <motion.div
+      variants={sidebarVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <Sidebar variant="inset" {...props}>
+        <motion.div variants={headerVariants}>
+          <SidebarHeader>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <motion.div
+                  variants={logoVariants}
+                  whileHover="hover"
+                >
+                  <SidebarMenuButton size="lg" asChild>
+                    <a href="#">
+                      <Image
+                        src="/img/Fatini_logo_dark2.png"
+                        alt="Taha logo"
+                        width={65}
+                        height={50}
+                        quality={100}
+                        className="object-contain bg-black dark:bg-transparent rounded-2xl light:invert dark:invert-0"
+                      />
+                      <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="truncate font-medium">ERP</span>
+                        <span className="truncate text-sm">Gestion Stock</span>
+                      </div>
+                    </a>
+                  </SidebarMenuButton>
+                </motion.div>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarHeader>
+        </motion.div>
 
-      <SidebarContent>
-        <NavMain items={navMain} />
-        <NavProjects projects={projects} />
-      </SidebarContent>
+        <motion.div variants={contentVariants}>
+          <SidebarContent>
+            <motion.div variants={itemVariants}>
+              <NavMain items={navMain} />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <NavProjects projects={projects} />
+            </motion.div>
+          </SidebarContent>
+        </motion.div>
 
-      <SidebarFooter>
-        <NavUser user={data.user} />
-        {loading ? <div className="text-xs mt-2 px-3">Chargement de l'utilisateur…</div> : null}
-        {error ? <div className="text-xs text-red-500 mt-2 px-3">{error}</div> : null}
-      </SidebarFooter>
-    </Sidebar>
+        <motion.div variants={footerVariants}>
+          <SidebarFooter>
+            <NavUser user={data.user} />
+            <AnimatePresence>
+              {loading && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="text-xs mt-2 px-3"
+                >
+                  Chargement de l'utilisateur…
+                </motion.div>
+              )}
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="text-xs text-red-500 mt-2 px-3"
+                >
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </SidebarFooter>
+        </motion.div>
+      </Sidebar>
+    </motion.div>
   )
 }

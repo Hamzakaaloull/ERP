@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -15,12 +15,89 @@ import {
   Calendar, 
   Package, 
   FileText,
-  Printer
+  Printer,
+  Truck,
+  Briefcase
 } from 'lucide-react'
 import PrintInvoice from './print-invoice'
 
+const API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL
+
 export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
   const [showPrintDialog, setShowPrintDialog] = useState(false)
+  const [saleDetails, setSaleDetails] = useState(null)
+  const [transport, setTransport] = useState(null)
+  const [job, setJob] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (sale && open) {
+      fetchSaleDetails()
+    }
+  }, [sale, open])
+
+  const fetchSaleDetails = async () => {
+    if (!sale) return
+    
+    setLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      
+      // Fetch sale details with all relations
+      const saleResponse = await fetch(
+        `${API_URL}/api/sales/${sale.documentId || sale.id}?populate=client&populate=user&populate=sale_items.product`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      )
+      
+      if (saleResponse.ok) {
+        const saleData = await saleResponse.json()
+        setSaleDetails(saleData.data)
+        
+        // Fetch transport for this sale
+        const transportResponse = await fetch(
+          `${API_URL}/api/transports?filters[sale][id][$eq]=${sale.id}&populate=*`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        )
+        
+        if (transportResponse.ok) {
+          const transportData = await transportResponse.json()
+          if (transportData.data && transportData.data.length > 0) {
+            setTransport(transportData.data[0])
+          }
+        }
+        
+        // Fetch job for this sale
+        const jobResponse = await fetch(
+          `${API_URL}/api/jobs?filters[sale][id][$eq]=${sale.id}&populate=*`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        )
+        
+        if (jobResponse.ok) {
+          const jobData = await jobResponse.json()
+          if (jobData.data && jobData.data.length > 0) {
+            setJob(jobData.data[0])
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des détails:', error)
+      setSaleDetails(sale)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handlePrintClick = () => {
     onOpenChange(false)
@@ -30,6 +107,8 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
   }
 
   if (!sale) return null
+
+  const currentSale = saleDetails || sale
 
   const getStatusBadge = (sale) => {
     const remaining = sale.remaining_amount || 0
@@ -44,6 +123,11 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
     }
   }
 
+  // Calculate products subtotal
+  const productsSubtotal = currentSale.sale_items?.reduce((total, item) => total + (item.total_price || 0), 0) || 0
+  const transportAmount = transport?.price || 0
+  const jobAmount = job?.price || 0
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -53,7 +137,7 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
               <div>
                 <DialogTitle className="text-xl md:text-2xl flex items-center gap-2">
                   <FileText className="h-5 w-5 md:h-6 md:w-6" />
-                  Détails de la Vente #{sale.id}
+                  Détails de la Vente #{currentSale.id}
                 </DialogTitle>
                 <DialogDescription className="text-sm md:text-base">
                   Informations complètes sur cette vente
@@ -72,103 +156,185 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
             </div>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-            {/* Informations Générales */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <FileText className="h-4 w-4 md:h-5 md:w-5" />
-                  Informations Générales
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 md:space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-sm md:text-base">Statut:</span>
-                  {getStatusBadge(sale)}
-                </div>
-                <div className="flex justify-between text-sm md:text-base">
-                  <span className="font-medium">Date:</span>
-                  <span>{sale.sale_date ? new Date(sale.sale_date).toLocaleString('fr-FR') : 'N/A'}</span>
-                </div>
-                <div className="flex justify-between text-sm md:text-base">
-                  <span className="font-medium">Total:</span>
-                  <span className="font-semibold">{sale.total_amount ? `${sale.total_amount.toFixed(2)} DH` : '0.00 DH'}</span>
-                </div>
-                <div className="flex justify-between text-green-600 text-sm md:text-base">
-                  <span className="font-medium">Payé:</span>
-                  <span className="font-semibold">{sale.paid_amount ? `${sale.paid_amount.toFixed(2)} DH` : '0.00 DH'}</span>
-                </div>
-                <div className="flex justify-between text-red-600 text-sm md:text-base">
-                  <span className="font-medium">Reste:</span>
-                  <span className="font-semibold">{sale.remaining_amount ? `${sale.remaining_amount.toFixed(2)} DH` : '0.00 DH'}</span>
-                </div>
-              </CardContent>
-            </Card>
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-3">Chargement des détails...</span>
+            </div>
+          ) : (
+            <div className="grid  gap-3  ">
+              {/* Informations Générales */}
+              <Card>
+                <CardHeader className="pb-3 lg:col-span-3">
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <FileText className="h-4 w-4 md:h-5 md:w-5" />
+                    Informations Générales
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 md:space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-sm md:text-base">Statut:</span>
+                    {getStatusBadge(currentSale)}
+                  </div>
+                  <div className="flex justify-between text-sm md:text-base">
+                    <span className="font-medium">Date:</span>
+                    <span>{currentSale.sale_date ? new Date(currentSale.sale_date).toLocaleString('fr-FR') : 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between text-sm md:text-base">
+                    <span className="font-medium">Total:</span>
+                    <span className="font-semibold">{currentSale.total_amount ? `${currentSale.total_amount.toFixed(2)} DH` : '0.00 DH'}</span>
+                  </div>
+                  <div className="flex justify-between text-green-600 text-sm md:text-base">
+                    <span className="font-medium">Payé:</span>
+                    <span className="font-semibold">{currentSale.paid_amount ? `${currentSale.paid_amount.toFixed(2)} DH` : '0.00 DH'}</span>
+                  </div>
+                  <div className="flex justify-between text-red-600 text-sm md:text-base">
+                    <span className="font-medium">Reste:</span>
+                    <span className="font-semibold">{currentSale.remaining_amount ? `${currentSale.remaining_amount.toFixed(2)} DH` : '0.00 DH'}</span>
+                  </div>
+                </CardContent>
+              </Card>
 
-            {/* Informations Client */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <User className="h-4 w-4 md:h-5 md:w-5" />
-                  Informations Client
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 md:space-y-4">
-                <div className="flex justify-between text-sm md:text-base">
-                  <span className="font-medium">Nom:</span>
-                  <span>{sale.client?.name || 'Non spécifié'}</span>
-                </div>
-                <div className="flex justify-between text-sm md:text-base">
-                  <span className="font-medium">Téléphone:</span>
-                  <span>{sale.client?.phone || 'Non spécifié'}</span>
-                </div>
-                <div className="flex justify-between text-sm md:text-base">
-                  <span className="font-medium">Vendeur:</span>
-                  <span>{sale.user?.username || 'N/A'}</span>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Informations Client */}
+              <Card>
+                <CardHeader className="pb-3  lg:col-span-3">
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <User className="h-4 w-4 md:h-5 md:w-5" />
+                    Informations Client
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 md:space-y-4">
+                  <div className="flex justify-between text-sm md:text-base">
+                    <span className="font-medium">Nom:</span>
+                    <span>{currentSale.client?.name || 'Non spécifié'}</span>
+                  </div>
+                  <div className="flex justify-between text-sm md:text-base">
+                    <span className="font-medium">Téléphone:</span>
+                    <span>{currentSale.client?.phone || 'Non spécifié'}</span>
+                  </div>
+                  <div className="flex justify-between text-sm md:text-base">
+                    <span className="font-medium">Vendeur:</span>
+                    <span>{currentSale.user?.username || 'N/A'}</span>
+                  </div>
+                </CardContent>
+              </Card>
 
-            {/* Articles de la Vente */}
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                  <Package className="h-4 w-4 md:h-5 md:w-5" />
-                  Articles ({sale.sale_items?.length || 0})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {sale.sale_items && sale.sale_items.length > 0 ? (
-                  <div className="space-y-2 md:space-y-3">
-                    {sale.sale_items.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm md:text-base">{item.product?.name || 'Produit inconnu'}</div>
-                          <div className="text-xs md:text-sm text-muted-foreground">
-                            {item.unit_price} DH × {item.quantity}
+              {/* Services Additionnels */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <Briefcase className="h-4 w-4 md:h-5 md:w-5" />
+                    Services Additionnels
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 md:space-y-4">
+                  {transport ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-blue-600">
+                        <Truck className="h-4 w-4" />
+                        <span className="font-medium">Transport</span>
+                      </div>
+                      <div className="text-sm">
+                        <div><strong>Nom:</strong> {transport.name}</div>
+                        <div><strong>Prix:</strong> {transport.price?.toFixed(2)} DH</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">Aucun transport</div>
+                  )}
+
+                  {job ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-green-600">
+                        <Briefcase className="h-4 w-4" />
+                        <span className="font-medium">Job</span>
+                      </div>
+                      <div className="text-sm">
+                        <div><strong>Nom:</strong> {job.name}</div>
+                        <div><strong>Prix:</strong> {job.price?.toFixed(2)} DH</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">Aucun job</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Articles de la Vente */}
+              <Card className="">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <Package className="h-4 w-4 md:h-5 md:w-5" />
+                    Articles ({currentSale.sale_items?.length || 0})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {currentSale.sale_items && currentSale.sale_items.length > 0 ? (
+                    <div className="space-y-2 md:space-y-3">
+                      {currentSale.sale_items.map((item, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="font-medium text-sm md:text-base">{item.product?.name || 'Produit inconnu'}</div>
+                            <div className="text-xs md:text-sm text-muted-foreground">
+                              {item.unit_price} DH × {item.quantity}
+                              {item.product?.unit && ` (${item.product.unit})`}
+                            </div>
+                          </div>
+                          <div className="font-semibold text-sm md:text-base">
+                            {item.total_price ? `${item.total_price.toFixed(2)} DH` : '0.00 DH'}
                           </div>
                         </div>
-                        <div className="font-semibold text-sm md:text-base">
-                          {item.total_price ? `${item.total_price.toFixed(2)} DH` : '0.00 DH'}
+                      ))}
+                      
+                      {/* Résumé des totaux */}
+                      <div className="border-t pt-4 mt-4 space-y-2">
+                        <div className="flex justify-between text-sm md:text-base">
+                          <span>Sous-total Produits:</span>
+                          <span className="font-semibold">
+                            {productsSubtotal.toFixed(2)} DH
+                          </span>
+                        </div>
+                        
+                        {transport && (
+                          <div className="flex justify-between text-sm md:text-base text-blue-600">
+                            <span>Transport:</span>
+                            <span className="font-semibold">+{transportAmount.toFixed(2)} DH</span>
+                          </div>
+                        )}
+                        
+                        {job && (
+                          <div className="flex justify-between text-sm md:text-base text-green-600">
+                            <span>Job:</span>
+                            <span className="font-semibold">+{jobAmount.toFixed(2)} DH</span>
+                          </div>
+                        )}
+                        
+                        <div className="flex justify-between text-lg md:text-xl font-bold border-t pt-2">
+                          <span>Total Général:</span>
+                          <span>{currentSale.total_amount?.toFixed(2)} DH</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground text-sm md:text-base">
-                    Aucun article dans cette vente
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground text-sm md:text-base">
+                      Aucun article dans cette vente
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
       {/* Dialog d'impression */}
       {showPrintDialog && (
         <PrintInvoice 
-          sale={sale} 
+          sale={{
+            ...currentSale,
+            transport: transport || null,
+            job: job || null
+          }} 
           onClose={() => setShowPrintDialog(false)}
         />
       )}
