@@ -1,6 +1,5 @@
-
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 
 export const exportCreditsToPDF = (filteredClients) => {
   try {
@@ -24,8 +23,8 @@ export const exportCreditsToPDF = (filteredClients) => {
       client.remainingDebt > 0 ? 'Actif' : 'Clôturé'
     ])
 
-    // Utilisation correcte de autoTable
-    doc.autoTable({
+    // Utilisation de autoTable comme fonction
+    autoTable(doc, {
       head: [['Client', 'Téléphone', 'Dette Totale', 'Payé', 'Reste Dû', 'Statut']],
       body: tableData,
       startY: 40,

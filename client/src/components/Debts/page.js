@@ -1,3 +1,4 @@
+
 "use client"
 import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
@@ -49,7 +50,8 @@ import {
   Edit,
   Printer,
   HandCoins,
-  ShoppingCart
+  ShoppingCart,
+  CheckCircle
 } from 'lucide-react'
 import AddCreditDialog from './components/add-credit-dialog'
 import CreditDetailsDialog from './components/credit-details-dialog'
@@ -78,6 +80,11 @@ export default function CreditsPage() {
   const [expandedClients, setExpandedClients] = useState(new Set())
   const [showPrintDialog, setShowPrintDialog] = useState(false)
   const [saleToPrint, setSaleToPrint] = useState(null)
+  const [markAsPaidDialog, setMarkAsPaidDialog] = useState({
+    open: false,
+    item: null,
+    type: null // 'credit' or 'sale'
+  })
 
   useEffect(() => {
     fetchCredits()
@@ -97,7 +104,7 @@ export default function CreditsPage() {
         }
       )
       const data = await response.json()
-      console.log('Données des crédits reçues:', data)
+    
       if (data && data.data) {
         setCredits(data.data)
       } else {
@@ -227,6 +234,119 @@ export default function CreditsPage() {
       })
     }
     setIsPaymentDialogOpen(true)
+  }
+
+  const handleMarkAsPaid = (item, type) => {
+    setMarkAsPaidDialog({
+      open: true,
+      item: item,
+      type: type
+    })
+  }
+
+  const confirmMarkAsPaid = async () => {
+    const { item, type } = markAsPaidDialog
+    if (!item) return
+
+    try {
+      const token = localStorage.getItem('token')
+      
+      if (type === 'credit') {
+        const remainingAmount = item.amount - (item.paid_amount || 0)
+        
+        // Update credit
+        const updateResponse = await fetch(`${API_URL}/api/credits/${item.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            data: {
+              paid_amount: item.amount,
+              statut: 'closed'
+            }
+          })
+        })
+
+        if (!updateResponse.ok) {
+          throw new Error('Erreur lors de la mise à jour du crédit')
+        }
+
+        // Create payment history
+        if (remainingAmount > 0) {
+          await fetch(`${API_URL}/api/payment-histories`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              data: {
+                amount: remainingAmount,
+                payment_method: 'cash',
+                payment_date: new Date().toISOString(),
+                note: 'Ce paiement a été effectué automatiquement',
+                credit: item.documentId || item.id
+              }
+            })
+          })
+        }
+
+      } else if (type === 'sale') {
+        const remainingAmount = item.remaining_amount || 0
+        
+        // Update sale
+        const updateResponse = await fetch(`${API_URL}/api/sales/${item.documentId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            data: {
+              paid_amount: item.total_amount,
+              remaining_amount: 0
+            }
+          })
+        })
+
+        if (!updateResponse.ok) {
+          throw new Error('Erreur lors de la mise à jour de la vente')
+        }
+
+        // Create payment history
+        if (remainingAmount > 0) {
+          await fetch(`${API_URL}/api/payment-histories`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              data: {
+                amount: remainingAmount,
+                
+                payment_date: new Date().toISOString(),
+                note: 'Ce paiement a été effectué automatiquement',
+                sale: item.documentId || item.id
+              }
+            })
+          })
+        }
+      }
+
+      toast.success('Paiement complet enregistré avec succès!')
+      setMarkAsPaidDialog({ open: false, item: null, type: null })
+      
+      // Refresh data
+      fetchCredits()
+      fetchSales()
+      
+    } catch (error) {
+      console.error('Erreur lors du marquage comme payé:', error)
+      toast.error('Erreur lors du marquage comme payé')
+    }
   }
 
   // Filtrer les crédits par date
@@ -660,6 +780,15 @@ export default function CreditsPage() {
                                 >
                                   <HandCoins className="h-4 w-4" />
                                 </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleMarkAsPaid(credit, 'credit')}
+                                  className="h-8 w-8 p-0 text-blue-600"
+                                  disabled={creditRemaining <= 0}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -713,6 +842,15 @@ export default function CreditsPage() {
                                   disabled={saleRemaining <= 0}
                                 >
                                   <HandCoins className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleMarkAsPaid(sale, 'sale')}
+                                  className="h-8 w-8 p-0 text-blue-600"
+                                  disabled={saleRemaining <= 0}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -791,6 +929,89 @@ export default function CreditsPage() {
             fetchSales()
           }}
         />
+
+        {/* Dialog de confirmation pour marquer comme payé */}
+        <Dialog open={markAsPaidDialog.open} onOpenChange={(open) => setMarkAsPaidDialog({...markAsPaidDialog, open})}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 dark:text-white text-lg md:text-xl">
+                <CheckCircle className="h-5 w-5 text-green-600 " />
+                Confirmer le paiement complet
+              </DialogTitle>
+              <DialogDescription>
+                Êtes-vous sûr de vouloir marquer cette {markAsPaidDialog.type === 'credit' ? 'crédit' : 'vente'} comme entièrement payée ?
+              </DialogDescription>
+            </DialogHeader>
+            
+            {markAsPaidDialog.item && (
+              <div className="space-y-4">
+                <Card>
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Client:</span>
+                      <span>{markAsPaidDialog.item.client?.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Type:</span>
+                      <span>{markAsPaidDialog.type === 'credit' ? 'Crédit' : 'Vente'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Montant total:</span>
+                      <span className="font-semibold">
+                        {markAsPaidDialog.type === 'credit' 
+                          ? markAsPaidDialog.item.amount?.toFixed(2) 
+                          : markAsPaidDialog.item.total_amount?.toFixed(2)
+                        } DH
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Déjà payé:</span>
+                      <span className="text-green-600">
+                        {markAsPaidDialog.type === 'credit' 
+                          ? (markAsPaidDialog.item.paid_amount || 0).toFixed(2)
+                          : (markAsPaidDialog.item.paid_amount || 0).toFixed(2)
+                        } DH
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-medium">Reste à payer:</span>
+                      <span className="font-semibold text-orange-600">
+                        {markAsPaidDialog.type === 'credit' 
+                          ? (markAsPaidDialog.item.amount - (markAsPaidDialog.item.paid_amount || 0)).toFixed(2)
+                          : (markAsPaidDialog.item.remaining_amount || 0).toFixed(2)
+                        } DH
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> Un paiement automatique sera créé dans l'historique avec la mention "Ce paiement a été effectué automatiquement".
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-4 dark:text-white">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setMarkAsPaidDialog({open: false, item: null, type: null})}
+              >
+                Annuler
+              </Button>
+              <Button 
+                type="button" 
+                onClick={confirmMarkAsPaid}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Confirmer le paiement
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Dialog d'impression */}
         {showPrintDialog && saleToPrint && (

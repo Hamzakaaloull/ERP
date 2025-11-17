@@ -49,9 +49,9 @@
       "target": "api::payment-history.payment-history",
       "mappedBy": "sale"
     },
-    "jobs": {
+    "job": {
       "type": "relation",
-      "relation": "oneToMany",
+      "relation": "oneToOne",
       "target": "api::job.job",
       "mappedBy": "sale"
     },

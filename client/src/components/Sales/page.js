@@ -93,7 +93,7 @@ export default function SalesPage() {
       const data = await response.json()
       
       if (data && data.data) {
-        console.log('Données des ventes reçues:', data)
+      
         setSales(data.data)
       } else {
         console.error('Structure de données inattendue:', data)
@@ -539,7 +539,7 @@ export default function SalesPage() {
             <CardTitle className="text-lg md:text-xl">Filtres et Recherche</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -579,7 +579,7 @@ export default function SalesPage() {
               </Select>
 
               {/* Filtres de date */}
-              <div className="space-y-2">
+              <div className="space-y-2 ">
                 <Label htmlFor="dateFrom" className="text-xs">De</Label>
                 <Input
                   id="dateFrom"

@@ -356,7 +356,7 @@ export function AppSidebar(props) {
                         width={65}
                         height={50}
                         quality={100}
-                        className="object-contain bg-black dark:bg-transparent rounded-2xl light:invert dark:invert-0"
+                        className="object-contain  dark:bg-transparent rounded-2xl light:invert dark:invert-0"
                       />
                       <div className="grid flex-1 text-left text-sm leading-tight">
                         <span className="truncate font-medium">ERP</span>

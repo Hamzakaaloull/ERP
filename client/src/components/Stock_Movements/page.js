@@ -176,7 +176,6 @@ export default function StockMovementsPage() {
       }
 
       await updateProductStock(product.documentId, newStockQuantity)
-      console.log(`Stock mis à jour: ${currentStock} -> ${newStockQuantity} pour le produit ${product.name}`)
     } catch (error) {
       console.error('Erreur lors de l\'application du changement de stock:', error)
       throw error
@@ -203,7 +202,6 @@ export default function StockMovementsPage() {
       }
 
       await updateProductStock(product.documentId, newStockQuantity)
-      console.log(`Stock réverti: ${currentStock} -> ${newStockQuantity} pour le produit ${product.name}`)
     } catch (error) {
       console.error('Erreur lors de la réversion du stock:', error)
       throw error

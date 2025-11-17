@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useRef, lazy, Suspense } from "react";
@@ -14,11 +13,11 @@ import {
   Moon
 } from "lucide-react";
 import { motion, AnimatePresence } from 'motion/react';
+import Particles from "./Particles"
 
 // Lazy load Lottie
 const DotLottieReact = lazy(() =>
   import("@lottiefiles/dotlottie-react").then((mod) => {
-    // Essayer d'utiliser ce qui existe : default ou export commun
     return { default: mod?.default ?? mod?.DotLottieReact ?? mod };
   })
 );
@@ -43,7 +42,6 @@ export default function LoginPage() {
 
   // Effet d'animation et auto-focus
   useEffect(() => {
-    // Focus sur l'input username après le montage du composant
     const timer = setTimeout(() => {
       if (usernameRef.current) {
         usernameRef.current.focus();
@@ -55,7 +53,6 @@ export default function LoginPage() {
 
   // Vérification de l'état du réseau
   useEffect(() => {
-    // Définir l'état initial directement
     setIsOnline(navigator.onLine);
     
     const handleOnline = () => {
@@ -66,7 +63,6 @@ export default function LoginPage() {
       setIsOnline(false);
     };
 
-    // Ajouter les écouteurs d'événements
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
@@ -176,283 +172,308 @@ export default function LoginPage() {
     setTheme(newTheme);
     document.documentElement.classList.toggle("dark");
   };
+// Définir les couleurs en fonction du thème
+  const hyperspeedColors = theme === "light" 
+    ? [
+      '#ffffffff',
+       '#ffffffff'
+    ]
+    : ['#000000ff', '#000000ff'];
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.8 }}
-      className="min-h-screen flex items-center justify-center p-4 bg-gray-50 dark:bg-black transition-all duration-500 ease-out"
-    >
-      {/* Bouton de changement de thème */}
-      <motion.button
-        initial={{ scale: 0, rotate: -180 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ 
-          type: "spring", 
-          stiffness: 200, 
-          damping: 15,
-          delay: 0.5
-        }}
-        whileHover={{ 
-          scale: 1.1,
-          rotate: 5,
-          transition: { duration: 0.2 }
-        }}
-        whileTap={{ scale: 0.9 }}
-        onClick={toggleTheme}
-        className="absolute top-4 right-4 p-2 rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors z-10"
-        aria-label={theme === "light" ? "Activer le mode sombre" : "Activer le mode clair"}
-      >
-        {theme === "light" ? (
-          <Moon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-        ) : (
-          <Sun className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-        )}
-      </motion.button>
+  <div className="relative min-h-screen w-full overflow-hidden bg-white dark:bg-black"> {/* Changez ici */}
+  {/* Background Particles */}
+  <div className="absolute inset-0 z-0 bg-white dark:bg-black"> {/* Et ici */}
+    <Particles
+      particleColors={hyperspeedColors} // Corrigez le nom de la prop
+      particleCount={600}
+      particleSpread={10}
+      speed={0.1}
+      particleBaseSize={100}
+      moveParticlesOnHover={true}
+      alphaParticles={false}
+      disableRotation={false}
+    />
+  </div>
 
-      {/* Indicateur de statut réseau */}
-      <AnimatePresence>
-        {!isOnline && (
-          <motion.div
-            className="absolute top-4 left-4 px-3 py-1 bg-yellow-100 border border-yellow-400 rounded-lg"
-          >
-            <p className="text-yellow-700 text-xs">Hors ligne</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <motion.div
-        initial={{ y: 50, opacity: 0, scale: 0.9 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        transition={{ 
-          type: "spring", 
-          stiffness: 100,
-          damping: 20,
-          delay: 0.3
-        }}
-        className="flex flex-col lg:flex-row w-auto max-w-3xl h-[500px] bg-white dark:bg-black shadow-2xl rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800"
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="relative min-h-screen flex items-center justify-center p-4 transition-all duration-500 ease-out z-10"
       >
-        {/* Carte d'authentification */}
-        <div className="w-full lg:w-[380px] p-6 flex flex-col justify-center">
-          <motion.div 
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="text-center mb-6"
-          >
-            {/* logo */}
+        {/* Bouton de changement de thème */}
+        <motion.button
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 200, 
+            damping: 15,
+            delay: 0.5
+          }}
+          whileHover={{ 
+            scale: 1.1,
+            rotate: 5,
+            transition: { duration: 0.2 }
+          }}
+          whileTap={{ scale: 0.9 }}
+          onClick={toggleTheme}
+          className="absolute top-4 right-4 p-2 rounded-lg bg-white/80 dark:bg-black/80 backdrop-blur-sm border border-gray-300/50 dark:border-gray-800/50 hover:bg-white dark:hover:bg-black transition-colors z-20"
+          aria-label={theme === "light" ? "Activer le mode sombre" : "Activer le mode clair"}
+        >
+          {theme === "light" ? (
+            <Moon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+          ) : (
+            <Sun className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+          )}
+        </motion.button>
+
+        {/* Indicateur de statut réseau */}
+        <AnimatePresence>
+          {!isOnline && (
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="absolute top-4 left-4 px-3 py-1 bg-yellow-100 border border-yellow-400 rounded-lg z-20"
+            >
+              <p className="text-yellow-700 text-xs">Hors ligne</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.div
+          initial={{ y: 50, opacity: 0, scale: 0.9 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 100,
+            damping: 20,
+            delay: 0.3
+          }}
+          className="flex flex-col lg:flex-row w-auto max-w-3xl h-[500px] bg-white/90 dark:bg-black/90 backdrop-blur-md shadow-2xl rounded-xl overflow-hidden border border-gray-200/50 dark:border-gray-800/50"
+        >
+          {/* Carte d'authentification */}
+          <div className="w-full lg:w-[380px] p-6 flex flex-col justify-center">
             <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ 
-                type: "spring", 
-                stiffness: 200,
-                delay: 0.8
-              }}
-              whileHover={{ 
-                scale: 1.05,
-                rotate: [0, -2, 2, -2, 0],
-                transition: { duration: 0.5 }
-              }}
-              className="flex justify-center item-center"
-            >
-              <Image
-                src="/img/Fatini_logo_dark2.png"
-                alt="fatini Logo"
-                width={150}
-                height={50}
-                className="object-contain light:invert dark:invert-0"
-              />
-            </motion.div>
-                     
-            <motion.h2 
-              initial={{ y: 10, opacity: 0 }}
+              initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.9 }}
-              className="text-xl font-bold text-gray-900 dark:text-white"
+              transition={{ delay: 0.6 }}
+              className="text-center mb-6"
             >
-              Bienvenue !
-            </motion.h2>
-            <motion.p 
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 1.0 }}
-              className="text-gray-600 dark:text-gray-400 mt-1 text-sm"
-            >
-              Connectez-vous pour continuer
-            </motion.p>
-           </motion.div>
-
-          <AnimatePresence mode="wait">
-            {error && (
-              <motion.div
-                key="error"
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400 }}
-                className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+              {/* logo */}
+              <motion.div 
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ 
+                  type: "spring", 
+                  stiffness: 200,
+                  delay: 0.8
+                }}
+                whileHover={{ 
+                  scale: 1.05,
+                  rotate: [0, -2, 2, -2, 0],
+                  transition: { duration: 0.5 }
+                }}
+                className="flex justify-center item-center"
               >
-                <p className="text-red-700 dark:text-red-400 text-center text-xs">
-                  {error}
-                </p>
+                <Image
+                  src="/img/Fatini_logo_dark2.png"
+                  alt="fatini Logo"
+                  width={150}
+                  height={50}
+                  className="object-contain light:invert dark:invert-0"
+                />
               </motion.div>
-            )}
-          </AnimatePresence>
+                       
+              <motion.h2 
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.9 }}
+                className="text-xl font-bold text-gray-900 dark:text-white"
+              >
+                Bienvenue !
+              </motion.h2>
+              <motion.p 
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 1.0 }}
+                className="text-gray-600 dark:text-gray-400 mt-1 text-sm"
+              >
+                Connectez-vous pour continuer
+              </motion.p>
+            </motion.div>
 
-          <motion.form
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: {
-                opacity: 1,
-                transition: {
-                  delayChildren: 1.1,
-                  staggerChildren: 0.1
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400 }}
+                  className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+                >
+                  <p className="text-red-700 dark:text-red-400 text-center text-xs">
+                    {error}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.form
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    delayChildren: 1.1,
+                    staggerChildren: 0.1
+                  }
                 }
-              }
-            }}
-            onSubmit={handleSubmit}
-            className="space-y-4"
-          >
-            {/* Champ Nom d'utilisateur */}
-            <motion.div
-              variants={{
-                hidden: { x: -20, opacity: 0 },
-                visible: { x: 0, opacity: 1 }
               }}
-              className="space-y-1"
+              onSubmit={handleSubmit}
+              className="space-y-4"
             >
-              <label htmlFor="username" className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                Nom d'utilisateur
-              </label>
-              <div className="relative">
-                <motion.div
-                  whileFocus={{ scale: 1.02 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                  <input
-                    ref={usernameRef}
-                    id="username"
-                    type="text"
-                    placeholder="Entrez votre nom d'utilisateur"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={loading || !isOnline}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 dark:focus:ring-gray-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    autoComplete="username"
-                  />
-                </motion.div>
-              </div>
-            </motion.div>
+              {/* Champ Nom d'utilisateur */}
+              <motion.div
+                variants={{
+                  hidden: { x: -20, opacity: 0 },
+                  visible: { x: 0, opacity: 1 }
+                }}
+                className="space-y-1"
+              >
+                <label htmlFor="username" className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Nom d'utilisateur
+                </label>
+                <div className="relative">
+                  <motion.div
+                    whileFocus={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <input
+                      ref={usernameRef}
+                      id="username"
+                      type="text"
+                      placeholder="Entrez votre nom d'utilisateur"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      disabled={loading || !isOnline}
+                      className="w-full pl-10 pr-4 py-2.5 bg-white/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 dark:focus:ring-gray-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      autoComplete="username"
+                    />
+                  </motion.div>
+                </div>
+              </motion.div>
 
-            {/* Champ Mot de passe */}
-            <motion.div
-              variants={{
-                hidden: { x: -20, opacity: 0 },
-                visible: { x: 0, opacity: 1 }
-              }}
-              className="space-y-1"
-            >
-              <label htmlFor="password" className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                Mot de passe
-              </label>
-              <div className="relative">
-                <motion.div
-                  whileFocus={{ scale: 1.02 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Entrez votre mot de passe"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+              {/* Champ Mot de passe */}
+              <motion.div
+                variants={{
+                  hidden: { x: -20, opacity: 0 },
+                  visible: { x: 0, opacity: 1 }
+                }}
+                className="space-y-1"
+              >
+                <label htmlFor="password" className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Mot de passe
+                </label>
+                <div className="relative">
+                  <motion.div
+                    whileFocus={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Entrez votre mot de passe"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={loading || !isOnline}
+                      className="w-full pl-10 pr-10 py-2.5 bg-white/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 dark:focus:ring-gray-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      autoComplete="current-password"
+                    />
+                  </motion.div>
+                  <motion.button
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.8 }}
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
                     disabled={loading || !isOnline}
-                    className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 dark:focus:ring-gray-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    autoComplete="current-password"
-                  />
-                </motion.div>
-                <motion.button
-                  whileHover={{ scale: 1.2 }}
-                  whileTap={{ scale: 0.8 }}
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading || !isOnline}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-900 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-3.5 w-3.5 text-gray-500" />
-                  ) : (
-                    <Eye className="h-3.5 w-3.5 text-gray-500" />
-                  )}
-                </motion.button>
-              </div>
-            </motion.div>
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-900 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-3.5 w-3.5 text-gray-500" />
+                    ) : (
+                      <Eye className="h-3.5 w-3.5 text-gray-500" />
+                    )}
+                  </motion.button>
+                </div>
+              </motion.div>
 
-            {/* Bouton de connexion */}
-            <motion.button
+              {/* Bouton de connexion */}
+              <motion.button
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 1.4 }}
+                whileHover={{ 
+                  scale: 1.02,
+                  y: -2,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ 
+                  scale: 0.98,
+                  y: 0
+                }}
+                type="submit"
+                disabled={loading || !isOnline}
+                className="w-full py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-black font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm mt-2 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <motion.div 
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="h-3 w-3 rounded-full border-2 border-current border-t-transparent" 
+                    />
+                    Connexion
+                  </div>
+                ) : (
+                  "Se connecter"
+                )}
+              </motion.button>
+            </motion.form>
+
+            {/* Message de support */}
+            <motion.div 
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 1.4 }}
-              whileHover={{ 
-                scale: 1.02,
-                y: -2,
-                transition: { duration: 0.2 }
-              }}
-              whileTap={{ 
-                scale: 0.98,
-                y: 0
-              }}
-              type="submit"
-              disabled={loading || !isOnline}
-              className="w-full py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-black font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm mt-2 disabled:cursor-not-allowed"
+              transition={{ delay: 1.5 }}
+              className="my-3 text-center"
             >
-              {loading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <motion.div 
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="h-3 w-3 rounded-full border-2 border-current border-t-transparent" 
-                  />
-                  Connexion
-                </div>
-              ) : (
-                "Se connecter"
-              )}
-            </motion.button>
-          </motion.form>
-
-          {/* Message de support */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 1.5 }}
-            className="my-3 text-center"
-          >
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Problème de connexion ?{" "}
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                type="button"
-                className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
-                onClick={() => {
-                  // Ajouter ici la logique pour contacter le support
-                  console.log("Contact support");
-                }}
-              >
-                Contactez le support
-              </motion.button>
-            </p>
-          </motion.div>
-        </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Problème de connexion ?{" "}
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  type="button"
+                  className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium transition-colors"
+                  onClick={() => {
+                    console.log("Contact support");
+                  }}
+                >
+                  Contactez le support
+                </motion.button>
+              </p>
+            </motion.div>
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }

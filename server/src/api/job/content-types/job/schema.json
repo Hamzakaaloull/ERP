@@ -19,9 +19,9 @@
     },
     "sale": {
       "type": "relation",
-      "relation": "manyToOne",
+      "relation": "oneToOne",
       "target": "api::sale.sale",
-      "inversedBy": "jobs"
+      "inversedBy": "job"
     }
   }
 }

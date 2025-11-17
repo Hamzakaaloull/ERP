@@ -107,7 +107,7 @@ export default function ProfilePage() {
 
       // رفع صورة الملف الشخصي إذا تم اختيار واحدة جديدة
       if (profileImage) {
-        await uploadProfileImage(user.documentId, profileImage)
+        await uploadProfileImage(user.id, profileImage)
       }
 
       toast.success('Profil mis à jour avec succès!')
@@ -120,33 +120,37 @@ export default function ProfilePage() {
     }
   }
 
-  const uploadProfileImage = async (userId, imageFile) => {
-    try {
-      const token = localStorage.getItem('token')
-      const formData = new FormData()
-      formData.append('files', imageFile)
-      formData.append('ref', 'plugin::users-permissions.user')
-      formData.append('refId', userId)
-      formData.append('field', 'profile')
+const uploadProfileImage = async (userId, imageFile) => {
+  try {
+    const token = localStorage.getItem('token')
+    const formData = new FormData()
+    formData.append('files', imageFile)
+    formData.append('ref', 'plugin::users-permissions.user')
+    formData.append('refId', userId)
+    formData.append('field', 'profile')
 
-      const uploadResponse = await fetch(`${API_URL}/api/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      })
+    const uploadResponse = await fetch(`${API_URL}/api/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    })
 
-      if (!uploadResponse.ok) {
-        throw new Error('Erreur lors de l\'upload de l\'image')
-      }
-
-      console.log('Image de profil uploadée avec succès')
-    } catch (error) {
-      console.error('Erreur lors de l\'upload de l\'image:', error)
-      throw error
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.json()
+      console.error('Upload error details:', errorData)
+      throw new Error(errorData.error?.message || 'Erreur lors de l\'upload de l\'image')
     }
+
+    const result = await uploadResponse.json()
+    console.log('Image upload successful:', result)
+    return result
+  } catch (error) {
+    console.error('Erreur lors de l\'upload de l\'image:', error)
+    throw error
   }
+}
 
   const updateFormData = (newData) => {
     setFormData(prev => ({ ...prev, ...newData }))

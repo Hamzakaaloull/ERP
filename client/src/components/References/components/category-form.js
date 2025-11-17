@@ -118,10 +118,10 @@ export default function CategoryForm({ category, products, onSuccess, onCancel }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col h-full">
+    <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-scroll">
       <ScrollArea className="flex-1 pr-4">
         <div className="space-y-6 pb-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-1  gap-6">
             {/* Informations de base */}
             <Card>
               <CardHeader className="pb-4">
@@ -251,7 +251,7 @@ export default function CategoryForm({ category, products, onSuccess, onCancel }
       </ScrollArea>
 
       {/* Fixed Footer */}
-      <div className="flex justify-end gap-3 pt-6 border-t mt-6">
+      <div className="flex justify-end gap-3 pt-6 border-t mt-6 dark:text-white">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           Annuler
         </Button>

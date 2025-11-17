@@ -88,7 +88,7 @@ export default function ProductsTab({ onUpdate }) {
         }
       })
       const data = await response.json()
-      console.log('Données des produits récupérées:', data)
+
       if (data && data.data) {
         setProducts(data.data)
       } else if (Array.isArray(data)) {

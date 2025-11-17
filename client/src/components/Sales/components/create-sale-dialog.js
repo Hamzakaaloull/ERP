@@ -385,7 +385,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
         user: currentUser?.id
       }
 
-      console.log('Création de la vente:', saleData)
+      
 
       // Créer la vente
       const saleResponse = await fetch(`${API_URL}/api/sales`, {
@@ -406,7 +406,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
       const saleResult = await saleResponse.json()
       const saleId = saleResult.data.documentId
 
-      console.log('Vente créée avec ID:', saleId)
+      
 
       // Créer les items de vente
       for (const item of cart) {
@@ -418,7 +418,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
           product: item.product.documentId
         }
 
-        console.log('Création item:', saleItemData)
+   
 
         const itemResponse = await fetch(`${API_URL}/api/sale-items`, {
           method: 'POST',
@@ -435,7 +435,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
 
         // Mettre à jour le stock du produit
         const newStock = item.product.stock_quantity - item.quantity
-        console.log('Mise à jour stock produit:', item.product.id, 'nouveau stock:', newStock)
+        
 
         await fetch(`${API_URL}/api/products/${item.product.documentId}`, {
           method: 'PUT',
@@ -511,21 +511,9 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
         action_type: 'create',
         entity_name: 'sale',
         entity_id: saleId,
-        new_data: JSON.stringify({
-          total_amount: grandTotal,
-          paid_amount: paid,
-          remaining_amount: remaining,
-          client: selectedClient,
-          transport: transportName || null,
-          job: jobName || null,
-          items: cart.map(item => ({
-            product: item.product.name,
-            quantity: item.quantity,
-            unit_price: item.unit_price
-          }))
-        }),
-        action_date: saleDate,
-        user: currentUser?.documentId
+        old_data : {},
+        new_data : {},
+        action_date: saleDate,  
       }
 
       await fetch(`${API_URL}/api/histories`, {
@@ -538,31 +526,36 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
       })
 
       // Préparer les données pour l'impression
-      const saleForPrint = {
-        id: saleId,
-        total_amount: grandTotal,
-        paid_amount: paid,
-        remaining_amount: remaining,
-        sale_date: saleDate,
-        client: {
-          name: clients.find(c => c.id.toString() === selectedClient)?.name || 'Client',
-          phone: clients.find(c => c.id.toString() === selectedClient)?.phone || ''
-        },
-        sale_items: cart.map(item => ({
-          product: { name: item.product.name },
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price
-        })),
-        transport: transportName ? {
-          name: transportName,
-          price: parseFloat(transportPrice) || 0
-        } : null,
-        job: jobName ? {
-          name: jobName,
-          price: parseFloat(jobPrice) || 0
-        } : null
-      }
+    // In create-sale-dialog.js - Update the saleForPrint creation
+const saleForPrint = {
+  id: saleId,
+  total_amount: grandTotal,
+  paid_amount: paid,
+  remaining_amount: remaining,
+  sale_date: saleDate,
+  client: {
+    name: clients.find(c => c.id.toString() === selectedClient)?.name || 'Client',
+    phone: clients.find(c => c.id.toString() === selectedClient)?.phone || ''
+  },
+  sale_items: cart.map(item => ({
+    product: { 
+      name: item.product.name,
+      // Add other product fields if needed
+      ...item.product
+    },
+    quantity: item.quantity,
+    unit_price: item.unit_price,
+    total_price: item.total_price
+  })),
+  transport: transportName ? {
+    name: transportName,
+    price: parseFloat(transportPrice) || 0
+  } : null,
+  job: jobName ? {
+    name: jobName,
+    price: parseFloat(jobPrice) || 0
+  } : null
+}
 
       setLastCreatedSale(saleForPrint)
 

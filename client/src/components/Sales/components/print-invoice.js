@@ -1,825 +1,227 @@
 "use client"
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { 
-  Printer,
-  X,
-  Store,
-  Phone,
-  MapPin,
-  Calendar,
-  User,
-  Package,
-  CreditCard,
-  QrCode,
-  Truck,
-  Briefcase
-} from 'lucide-react'
+import { X, Printer, Tag, Truck, Briefcase, Clock, Receipt, Palette } from "lucide-react"
+import TraditionalInvoice from "./TraditionalInvoice"
+import ModernInvoice from "./ModernInvoice"
 
-const API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL
+const API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL || ""
 
 export default function PrintInvoice({ sale, onClose }) {
-  const invoiceRef = useRef()
-  const [paymentHistory, setPaymentHistory] = useState([])
+  const [invoiceType, setInvoiceType] = useState("modern")
+  const [payments, setPayments] = useState([])
+  const [completeSale, setCompleteSale] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (sale) {
-      fetchPaymentHistory()
+      fetchCompleteSaleData()
     }
   }, [sale])
 
-  const fetchPaymentHistory = async () => {
+  // دالة لجلب البيانات الكاملة مع العلاقات
+  async function fetchCompleteSaleData() {
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(
-        `${API_URL}/api/payment-histories?filters[sale][id][$eq]=${sale.id}&sort=payment_date:desc`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      )
-      const data = await response.json()
-      if (data && data.data) {
-        setPaymentHistory(data.data)
+      setLoading(true)
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+      
+      if (!sale?.id) {
+        setCompleteSale(sale)
+        return
       }
-    } catch (error) {
-      console.error('Erreur lors du chargement de l\'historique des paiements:', error)
+
+      // جلب البيانات الكاملة مع جميع العلاقات
+      const saleUrl = `${API_URL}/api/sales/${sale.documentId}?populate=client&populate=user&populate=sale_items.product&populate=transport&populate=job`
+      
+      const saleResponse = await fetch(saleUrl, { 
+        headers: token ? { Authorization: `Bearer ${token}` } : {} 
+      })
+
+      if (saleResponse.ok) {
+        const saleData = await saleResponse.json()
+        setCompleteSale(saleData.data)
+        
+      } else {
+        // إذا فشل الجلب، استخدم البيانات الأصلية
+        console.warn("⚠️ استخدام البيانات الأصلية (غير مكتملة)")
+        setCompleteSale(sale)
+      }
+
+      // جلب بيانات الدفعات
+      await fetchPayments(sale.id)
+    } catch (err) {
+      console.error("❌ خطأ في جلب البيانات:", err)
+      setCompleteSale(sale)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handlePrint = () => {
-    const printContent = invoiceRef.current
-    const printWindow = window.open('', '_blank', 'width=600,height=800,scrollbars=0,status=0')
-    
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Facture #${sale.id}</title>
-          <style>
-            @media print {
-              @page {
-                size: A5 portrait;
-                margin: 10mm;
-              }
-              body {
-                font-family: 'Arial', 'Helvetica Neue', sans-serif;
-                font-size: 12px;
-                margin: 0;
-                padding: 0;
-                background: white;
-                direction: ltr;
-              }
-              .ticket {
-                width: 100%;
-                max-width: 148mm;
-                background: white;
-                border: 1px solid #ddd;
-                padding: 15px;
-                position: relative;
-              }
-              .header {
-                text-align: center;
-                border-bottom: 2px solid #333;
-                padding-bottom: 10px;
-                margin-bottom: 15px;
-              }
-              .company-name {
-                font-size: 20px;
-                font-weight: bold;
-                margin-bottom: 5px;
-                color: #333;
-              }
-              .company-name-ar {
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 8px;
-                color: #333;
-                direction: rtl;
-              }
-              .company-address {
-                font-size: 11px;
-                color: #666;
-                margin-bottom: 3px;
-              }
-              .company-address-ar {
-                font-size: 11px;
-                color: #666;
-                margin-bottom: 5px;
-                direction: rtl;
-              }
-              .invoice-title {
-                font-size: 18px;
-                font-weight: 800;
-                margin: 8px 0;
-                text-transform: uppercase;
-              }
-              .invoice-title-ar {
-                font-size: 16px;
-                font-weight: 800;
-                margin: 8px 0;
-                text-transform: uppercase;
-                direction: rtl;
-              }
-              .bilingual-item {
-                margin: 8px 0;
-              }
-              .bilingual-label {
-                font-weight: 600;
-                color: #555;
-                margin-bottom: 2px;
-                font-size: 10px;
-              }
-              .bilingual-value {
-                font-weight: 700;
-                color: #000;
-                font-size: 11px;
-              }
-              .arabic-text {
-                direction: rtl;
-                text-align: right;
-              }
-              .divider {
-                border-bottom: 1px solid #ccc;
-                margin: 8px 0;
-              }
-              .section-title {
-                font-weight: 700;
-                font-size: 12px;
-                background: #f5f5f5;
-                padding: 6px 8px;
-                margin: 12px 0 8px 0;
-                border-left: 4px solid #333;
-              }
-              .section-title-ar {
-                font-weight: 700;
-                font-size: 12px;
-                background: #f5f5f5;
-                padding: 6px 8px;
-                margin: 12px 0 8px 0;
-                border-right: 4px solid #333;
-                direction: rtl;
-                text-align: right;
-              }
-              .info-item {
-                display: flex;
-                justify-content: space-between;
-                padding: 3px 0;
-              }
-              .info-label {
-                font-weight: 600;
-                color: #555;
-                font-size: 10px;
-              }
-              .info-value {
-                font-weight: 700;
-                color: #000;
-                font-size: 11px;
-              }
-              table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 10px 0;
-                font-size: 10px;
-              }
-              th {
-                background: #333;
-                color: white;
-                padding: 6px 4px;
-                text-align: left;
-                font-weight: 600;
-                border: 1px solid #555;
-                font-size: 9px;
-              }
-              th.arabic {
-                text-align: right;
-                direction: rtl;
-              }
-              td {
-                padding: 5px 4px;
-                border: 1px solid #ddd;
-                font-size: 9px;
-              }
-              td.arabic {
-                text-align: right;
-                direction: rtl;
-              }
-              .text-right {
-                text-align: right;
-              }
-              .text-center {
-                text-align: center;
-              }
-              .totals {
-                background: #f9f9f9;
-                padding: 12px;
-                border: 1px solid #ddd;
-                margin: 12px 0;
-              }
-              .total-row {
-                display: flex;
-                justify-content: space-between;
-                margin: 4px 0;
-                font-weight: 600;
-                font-size: 11px;
-              }
-              .total-main {
-                font-size: 12px;
-                font-weight: 800;
-                border-top: 2px solid #333;
-                padding-top: 6px;
-                margin-top: 6px;
-              }
-              .status-badge {
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 800;
-                text-transform: uppercase;
-              }
-              .status-paid { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-              .status-pending { background: #f8d7da; color: #721c24; border: 1px solid #f1b0b7; }
-              .status-partial { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
-              .payment-item {
-                background: white;
-                padding: 6px;
-                margin: 4px 0;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 9px;
-              }
-              .bilingual-payment {
-                display: flex;
-                justify-content: space-between;
-              }
-              .footer {
-                text-align: center;
-                margin-top: 15px;
-                padding-top: 12px;
-                border-top: 2px solid #333;
-                color: #666;
-                font-size: 9px;
-              }
-              .thank-you {
-                font-weight: 700;
-                font-size: 11px;
-                color: #333;
-                margin-bottom: 4px;
-              }
-              .barcode-area {
-                text-align: center;
-                margin: 12px 0;
-                padding: 8px;
-                background: #f5f5f5;
-                border: 1px solid #ddd;
-              }
-              .service-item {
-                background: white;
-                padding: 6px;
-                margin: 4px 0;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                font-size: 9px;
-              }
-              .bilingual-service {
-                display: flex;
-                justify-content: space-between;
-              }
-            }
-            body {
-              font-family: 'Arial', 'Helvetica Neue', sans-serif;
-              font-size: 12px;
-              margin: 0;
-              padding: 15px;
-              background: white;
-              direction: ltr;
-            }
-            .ticket {
-              width: 100%;
-              max-width: 148mm;
-              background: white;
-              border: 1px solid #ddd;
-              padding: 15px;
-              position: relative;
-            }
-            .header {
-              text-align: center;
-              border-bottom: 2px solid #333;
-              padding-bottom: 10px;
-              margin-bottom: 15px;
-            }
-            .company-name {
-              font-size: 20px;
-              font-weight: bold;
-              margin-bottom: 5px;
-              color: #333;
-            }
-            .company-name-ar {
-              font-size: 18px;
-              font-weight: bold;
-              margin-bottom: 8px;
-              color: #333;
-              direction: rtl;
-            }
-            .company-address {
-              font-size: 11px;
-              color: #666;
-              margin-bottom: 3px;
-            }
-            .company-address-ar {
-              font-size: 11px;
-              color: #666;
-              margin-bottom: 5px;
-              direction: rtl;
-            }
-            .invoice-title {
-              font-size: 18px;
-              font-weight: 800;
-              margin: 8px 0;
-              text-transform: uppercase;
-            }
-            .invoice-title-ar {
-              font-size: 16px;
-              font-weight: 800;
-              margin: 8px 0;
-              text-transform: uppercase;
-              direction: rtl;
-            }
-            .bilingual-item {
-              margin: 8px 0;
-            }
-            .bilingual-label {
-              font-weight: 600;
-              color: #555;
-              margin-bottom: 2px;
-              font-size: 10px;
-            }
-            .bilingual-value {
-              font-weight: 700;
-              color: #000;
-              font-size: 11px;
-            }
-            .arabic-text {
-              direction: rtl;
-              text-align: right;
-            }
-            .divider {
-              border-bottom: 1px solid #ccc;
-              margin: 8px 0;
-            }
-            .section-title {
-              font-weight: 700;
-              font-size: 12px;
-              background: #f5f5f5;
-              padding: 6px 8px;
-              margin: 12px 0 8px 0;
-                border-left: 4px solid #333;
-            }
-            .section-title-ar {
-              font-weight: 700;
-              font-size: 12px;
-              background: #f5f5f5;
-              padding: 6px 8px;
-              margin: 12px 0 8px 0;
-              border-right: 4px solid #333;
-              direction: rtl;
-              text-align: right;
-            }
-            .info-item {
-              display: flex;
-              justify-content: space-between;
-              padding: 3px 0;
-            }
-            .info-label {
-              font-weight: 600;
-              color: #555;
-              font-size: 10px;
-            }
-            .info-value {
-              font-weight: 700;
-              color: #000;
-              font-size: 11px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 10px 0;
-              font-size: 10px;
-            }
-            th {
-              background: #333;
-              color: white;
-              padding: 6px 4px;
-              text-align: left;
-              font-weight: 600;
-              border: 1px solid #555;
-              font-size: 9px;
-            }
-            th.arabic {
-              text-align: right;
-              direction: rtl;
-            }
-            td {
-              padding: 5px 4px;
-              border: 1px solid #ddd;
-              font-size: 9px;
-            }
-            td.arabic {
-              text-align: right;
-              direction: rtl;
-            }
-            .text-right {
-                text-align: right;
-            }
-            .text-center {
-                text-align: center;
-            }
-            .totals {
-              background: #f9f9f9;
-              padding: 12px;
-              border: 1px solid #ddd;
-              margin: 12px 0;
-            }
-            .total-row {
-              display: flex;
-              justify-content: space-between;
-              margin: 4px 0;
-              font-weight: 600;
-              font-size: 11px;
-            }
-            .total-main {
-              font-size: 12px;
-              font-weight: 800;
-              border-top: 2px solid #333;
-              padding-top: 6px;
-              margin-top: 6px;
-            }
-            .status-badge {
-              padding: 4px 8px;
-              border-radius: 4px;
-              font-size: 10px;
-              font-weight: 800;
-              text-transform: uppercase;
-            }
-            .status-paid { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-            .status-pending { background: #f8d7da; color: #721c24; border: 1px solid #f1b0b7; }
-            .status-partial { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
-            .payment-item {
-              background: white;
-              padding: 6px;
-              margin: 4px 0;
-              border: 1px solid #ddd;
-              border-radius: 4px;
-              font-size: 9px;
-            }
-            .bilingual-payment {
-              display: flex;
-              justify-content: space-between;
-            }
-            .service-item {
-              background: white;
-              padding: 6px;
-              margin: 4px 0;
-              border: 1px solid #ddd;
-              border-radius: 4px;
-              font-size: 9px;
-            }
-            .bilingual-service {
-              display: flex;
-              justify-content: space-between;
-            }
-            .footer {
-              text-align: center;
-              margin-top: 15px;
-              padding-top: 12px;
-              border-top: 2px solid #333;
-              color: #666;
-              font-size: 9px;
-            }
-            .thank-you {
-              font-weight: 700;
-              font-size: 11px;
-              color: #333;
-              margin-bottom: 4px;
-            }
-            .barcode-area {
-              text-align: center;
-              margin: 12px 0;
-              padding: 8px;
-              background: #f5f5f5;
-              border: 1px solid #ddd;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="ticket">
-            ${printContent.innerHTML}
-          </div>
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(() => {
-                window.close();
-              }, 100);
-            }
-          </script>
-        </body>
-      </html>
-    `)
-    
-    printWindow.document.close()
+  async function fetchPayments(saleId) {
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+      const url = `${API_URL}/api/payment-histories?filters[sale][id][$eq]=${saleId}&sort=payment_date:desc`
+      const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      const json = await res.json()
+      if (json && json.data) setPayments(json.data)
+    } catch (err) {
+      console.error("خطأ في جلب الدفعات:", err)
+    }
   }
 
-  const getStatusInfo = (sale) => {
-    const remaining = sale.remaining_amount || 0
-    const paid = sale.paid_amount || 0
+  function formatNumber(v) {
+    const n = Number(v || 0)
+    return n.toFixed(2)
+  }
+
+  function getStatusText(s) {
+    const remaining = Number(s?.remaining_amount || 0)
+    const paid = Number(s?.paid_amount || 0)
+    if (remaining === 0 && paid > 0) return "PAYÉ"
+    if (paid > 0 && remaining > 0) return "PARTIEL"
+    return "EN ATTENTE"
+  }
+
+  function statusClassForText(text) {
+    if (text === "PAYÉ") return "paid"
+    if (text === "PARTIEL") return "partial"
+    return "pending"
+  }
+
+  // فتح نافذة الطباعة
+  function openPrintWindow() {
+    if (!completeSale) return
     
-    if (remaining === 0 && paid > 0) {
-      return { 
-        text: 'PAID / مدفوع', 
-        class: 'status-paid' 
-      }
-    } else if (paid > 0 && remaining > 0) {
-      return { 
-        text: 'PARTIAL / جزئي', 
-        class: 'status-partial' 
-      }
+    let printHTML
+    if (invoiceType === "traditional") {
+      printHTML = TraditionalInvoice.buildPrintHTML(completeSale, payments, formatNumber, getStatusText, statusClassForText)
     } else {
-      return { 
-        text: 'PENDING / قيد الانتظار', 
-        class: 'status-pending' 
-      }
+      printHTML = ModernInvoice.buildPrintHTML(completeSale, payments, formatNumber, getStatusText, statusClassForText)
+    }
+    
+    const win = window.open("", "_blank", "width=1200,height=800,scrollbars=yes")
+    if (!win) return
+    win.document.write(printHTML)
+    win.document.close()
+    win.onload = function () {
+      win.focus()
+      win.print()
     }
   }
 
-  const getPaymentMethodText = (method) => {
-    const methods = {
-      'cash': 'CASH / نقد',
-      'card': 'CARD / بطاقة',
-      'transfer': 'TRANSFER / تحويل',
-      'check': 'CHECK / شيك'
-    }
-    return methods[method] || method
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
+        <Card className="p-8">
+          <CardContent className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>جاري تحميل البيانات الكاملة...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
-  const statusInfo = getStatusInfo(sale)
-
-  // Générer un code de ticket
-  const generateTicketCode = () => {
-    return `TKT${sale.id.toString().padStart(6, '0')}${Date.now().toString().slice(-4)}`
-  }
-
-  const ticketCode = generateTicketCode()
+  const statusText = getStatusText(completeSale)
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 ">
-      <Card className="w-full max-w-md mx-auto max-h-[90vh] overflow-hidden flex flex-col">
-        <CardContent className="p-4 md:p-6 flex flex-col flex-1 overflow-hidden">
-          <div className="flex justify-between items-center mb-4 flex-shrink-0">
-            <h2 className="text-lg md:text-xl font-bold">Aperçu du Ticket - معاينة التذكرة</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4 overflow-auto">
+      <Card className="w-full max-w-6xl mx-auto overflow-hidden max-h-[95vh] flex flex-col">
+        <CardContent className="p-6 flex flex-col gap-4 flex-1 overflow-hidden">
+          <div className="flex justify-between items-center flex-shrink-0">
+            <h3 className="text-lg font-bold">Aperçu de la facture - Format A4</h3>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={onClose} size="sm"><X className="h-4 w-4" /></Button>
+              <Button onClick={openPrintWindow} size="sm" disabled={!completeSale}>
+                <Printer className="h-4 w-4 mr-2" />Imprimer
+              </Button>
+            </div>
+          </div>
+
+          {/* باقي الكود بدون تغيير */}
+          <div className="flex gap-2 mb-4 flex-shrink-0">
             <Button
-              variant="ghost"
+              variant={invoiceType === "traditional" ? "default" : "outline"}
+              onClick={() => setInvoiceType("traditional")}
               size="sm"
-              onClick={onClose}
-              className="h-8 w-8 p-0"
+              className="flex items-center gap-2"
             >
-              <X className="h-4 w-4" />
+              <Receipt className="h-4 w-4" />
+              Style Traditionnel
+            </Button>
+            <Button
+              variant={invoiceType === "modern" ? "default" : "outline"}
+              onClick={() => setInvoiceType("modern")}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Palette className="h-4 w-4" />
+              Style Moderne
             </Button>
           </div>
 
-          {/* Aperçu du ticket */}
-          <div className="flex-1 overflow-auto ">
-            <div 
-              ref={invoiceRef}
-              className="bg-white dark:bg-gray-900 mx-auto border border-gray-300 shadow-lg"
-              style={{ width: '148mm', minHeight: '210mm', padding: '15px' }}
-            >
-              {/* En-tête du ticket */}
-              <div className="header">
-                <img src="/img/Fatini_logo_ligth.png" alt="Fatini Store" className="mx-auto mb-2" style={{width: '120px', height: 'auto'}} />
-                <div className="company-address">OULED ILLOUL • Souk Sebt • Morocco</div>
-                <div className="company-address-ar">أولاد إيلول • سوق السبت • المغرب</div>
-                
-                <div className="company-address">📞 06 23 45 67 89</div>
-                
-                <div className="invoice-title">SALE RECEIPT / إيصال بيع</div>
-                
-                <div className={`status-badge ${statusInfo.class} inline-block mt-2`}>
-                  {statusInfo.text}
+          <div className="flex gap-6 flex-1 overflow-hidden">
+            <div className="bg-white border border-gray-200 shadow-lg rounded-lg overflow-hidden flex-1 flex flex-col">
+              <div className="p-4 bg-gray-50 border-b flex-shrink-0">
+                <div className="text-sm font-medium text-gray-600">
+                  Aperçu {invoiceType === "traditional" ? "Traditionnel" : "Moderne"} - Format A4
                 </div>
               </div>
-
-              {/* Informations de base */}
-              <div className="section-title">INVOICE INFO / معلومات الفاتورة</div>
-              
-              <div className="info-item">
-                <span className="info-label">Ticket N° / رقم التذكرة:</span>
-                <span className="info-value">#{sale.id}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Date / التاريخ:</span>
-                <span className="info-value">
-                  {sale.sale_date ? new Date(sale.sale_date).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')}
-                </span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Time / الوقت:</span>
-                <span className="info-value">
-                  {sale.sale_date ? new Date(sale.sale_date).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}
-                </span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Reference / المرجع:</span>
-                <span className="info-value">{ticketCode}</span>
-              </div>
-
-              <div className="divider"></div>
-
-              {/* Informations client */}
-              <div className="section-title">CLIENT INFO / معلومات العميل</div>
-           
-              <div className="info-item">
-                <span className="info-label">Client / العميل:</span>
-                <span className="info-value">{sale.client?.name || 'Non spécifié / غير محدد'}</span>
-              </div>
-              {sale.client?.phone && (
-                <div className="info-item">
-                  <span className="info-label">Phone / الهاتف:</span>
-                  <span className="info-value">{sale.client.phone}</span>
-                </div>
-              )}
-
-              <div className="divider"></div>
-
-              {/* Articles */}
-              <div className="section-title">PRODUCTS / المنتجات</div>
-              
-              <table>
-                <thead>
-                  <tr>
-                    <th>Product / المنتج</th>
-                    <th className="text-right">Qty / الكمية</th>
-                    <th className="text-right">Unit Price / السعر</th>
-                    <th className="text-right">Total / المجموع</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sale.sale_items?.map((item, index) => (
-                    <tr key={index}>
-                      <td>{item.product?.name || 'Product / منتج'}</td>
-                      <td className="text-right">{item.quantity}</td>
-                      <td className="text-right">{item.unit_price?.toFixed(2)} DH</td>
-                      <td className="text-right">{item.total_price?.toFixed(2)} DH</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="divider"></div>
-
-              {/* Services Additionnels - Transport et Job */}
-              {(sale.transport || sale.jobs) && (
-                <>
-                  <div className="section-title">ADDITIONAL SERVICES / خدمات إضافية</div>
-                  
-                  <div className="space-y-2">
-                    {sale.transport && (
-                      <div className="service-item">
-                        <div className="bilingual-service">
-                          <div className="flex items-center gap-2">
-                            <Truck className="h-3 w-3" />
-                            <span>Transport: {sale.transport.name}</span>
-                          </div>
-                          <div className="font-semibold">+{sale.transport.price?.toFixed(2)} DH</div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {sale.jobs && (
-                      <div className="service-item">
-                        <div className="bilingual-service">
-                          <div className="flex items-center gap-2">
-                            <Briefcase className="h-3 w-3" />
-                            <span>Job: {sale.jobs.name}</span>
-                          </div>
-                          <div className="font-semibold">+{sale.jobs.price?.toFixed(2)} DH</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="divider"></div>
-                </>
-              )}
-
-              {/* Historique des Paiements */}
-              {paymentHistory.length > 0 && (
-                <>
-                  <div className="section-title">PAYMENT HISTORY / سجل الدفع</div>
-                 
-                  <div className="space-y-2">
-                    {paymentHistory.map((payment, index) => (
-                      <div key={index} className="payment-item">
-                        <div className="bilingual-payment">
-                          <div>
-                            <strong>{new Date(payment.payment_date).toLocaleDateString('fr-FR')}</strong>
-                            <span className="ml-2">{getPaymentMethodText(payment.payment_method)}</span>
-                          </div>
-                          <div className="font-semibold">{payment.amount.toFixed(2)} DH</div>
-                        </div>
-                        {payment.note && (
-                          <div className="text-xs text-gray-600 mt-1">
-                            Note: {payment.note}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="divider"></div>
-                </>
-              )}
-
-              {/* Totaux */}
-              <div className="totals">
-                <div className="section-title">SUMMARY / الملخص</div>
-            
-                <div className="total-row">
-                  <span>Subtotal Products / المنتجات:</span>
-                  <span>
-                    {sale.sale_items?.reduce((total, item) => total + (item.total_price || 0), 0)?.toFixed(2) || '0.00'} DH
-                  </span>
-                </div>
-
-                {sale.transport && (
-                  <div className="total-row" style={{color: '#1e40af'}}>
-                    <span>Transport / النقل:</span>
-                    <span>+{sale.transport.price?.toFixed(2) || '0.00'} DH</span>
+              <div className="p-6 bg-white flex-1 overflow-auto">
+                {completeSale ? (
+                  invoiceType === "traditional" ? (
+                    <TraditionalInvoice.Preview 
+                      sale={completeSale} 
+                      payments={payments} 
+                      formatNumber={formatNumber}
+                      statusText={statusText}
+                      statusClassForText={statusClassForText}
+                    />
+                  ) : (
+                    <ModernInvoice.Preview 
+                      sale={completeSale} 
+                      payments={payments} 
+                      formatNumber={formatNumber}
+                      statusText={statusText}
+                      statusClassForText={statusClassForText}
+                    />
+                  )
+                ) : (
+                  <div className="text-center py-8 text-red-600">
+                    ❌ لا توجد بيانات للعرض
                   </div>
                 )}
-
-                {sale.jobs && (
-                  <div className="total-row" style={{color: '#166534'}}>
-                    <span>Job / العمل:</span>
-                    <span>+{sale.jobs.price?.toFixed(2) || '0.00'} DH</span>
-                  </div>
-                )}
-
-                <div className="total-row">
-                  <span>Subtotal / المجموع الجزئي:</span>
-                  <span>{sale.total_amount?.toFixed(2) || '0.00'} DH</span>
-                </div>
-                
-                <div className="total-row" style={{color: '#16a34a'}}>
-                  <span>Paid / المدفوع:</span>
-                  <span>+{sale.paid_amount?.toFixed(2) || '0.00'} DH</span>
-                </div>
-                
-                <div className="total-row total-main" style={{
-                  color: (sale.remaining_amount || 0) > 0 ? '#dc2626' : '#16a34a'
-                }}>
-                  <span>BALANCE / الرصيد:</span>
-                  <span>
-                    {(sale.remaining_amount || 0) > 0 ? '-' : ''}
-                    {(sale.remaining_amount || 0) > 0 ? sale.remaining_amount?.toFixed(2) : '0.00'} DH
-                  </span>
-                </div>
               </div>
+            </div>
 
-              {/* Footer */}
-              <div className="footer">
-                <div className="thank-you">Thank you for your business! / شكرا لتعاملكم!</div>
-                <div>For any inquiries, please contact us / للاستفسارات، يرجى الاتصال بنا</div>
-                <div className="barcode-area">
-                  <div>Scan for details / امسح للتفاصيل</div>
-                  <div style={{ fontFamily: 'monospace', fontSize: '10px', letterSpacing: '2px' }}>
-                    {ticketCode}
+            {/* Actions sidebar */}
+            <div className="min-w-64 flex flex-col gap-4 flex-shrink-0">
+              <Button onClick={openPrintWindow} className="w-full" disabled={!completeSale}>
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimer
+              </Button>
+              <Button variant="outline" onClick={onClose} className="w-full">
+                Fermer
+              </Button>
+              
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="text-sm font-medium text-gray-700 mb-2">Informations</div>
+                <div className="space-y-3 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    {completeSale ? (
+                      <span className="text-green-600">✅ To print</span>
+                    ) : (
+                      <span className="text-red-600">❌ Data not available</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    <span>Formats standard</span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 justify-center pt-4 flex-shrink-0">
-            <Button 
-              onClick={handlePrint}
-              className="gap-2 text-sm md:text-base"
-              size="sm"
-            >
-              <Printer className="h-4 w-4" />
-              Print Ticket / طباعة التذكرة
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={onClose}
-              size="sm"
-              className="text-sm md:text-base"
-            >
-              Close / إغلاق
-            </Button>
           </div>
         </CardContent>
       </Card>

@@ -17,7 +17,11 @@ import {
   FileText,
   Printer,
   Truck,
-  Briefcase
+  Briefcase,
+  CreditCard,
+  History,
+  Banknote,
+  Send
 } from 'lucide-react'
 import PrintInvoice from './print-invoice'
 
@@ -28,11 +32,14 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
   const [saleDetails, setSaleDetails] = useState(null)
   const [transport, setTransport] = useState(null)
   const [job, setJob] = useState(null)
+  const [paymentHistory, setPaymentHistory] = useState([])
   const [loading, setLoading] = useState(false)
+  const [loadingPayments, setLoadingPayments] = useState(false)
 
   useEffect(() => {
     if (sale && open) {
       fetchSaleDetails()
+      fetchPaymentHistory()
     }
   }, [sale, open])
 
@@ -99,6 +106,34 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
     }
   }
 
+  const fetchPaymentHistory = async () => {
+    if (!sale) return
+    
+    setLoadingPayments(true)
+    try {
+      const token = localStorage.getItem('token')
+      
+      const paymentResponse = await fetch(
+        `${API_URL}/api/payment-histories?filters[sale][id][$eq]=${sale.id}&sort=payment_date:desc&populate=*`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      )
+      
+      if (paymentResponse.ok) {
+        const paymentData = await paymentResponse.json()
+        setPaymentHistory(paymentData.data || [])
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de l\'historique des paiements:', error)
+      setPaymentHistory([])
+    } finally {
+      setLoadingPayments(false)
+    }
+  }
+
   const handlePrintClick = () => {
     onOpenChange(false)
     setTimeout(() => {
@@ -120,6 +155,32 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
       return <Badge variant="secondary">Partiellement payée</Badge>
     } else {
       return <Badge variant="destructive">Impayée</Badge>
+    }
+  }
+
+  const getPaymentMethodIcon = (method) => {
+    switch (method) {
+      case 'cash':
+        return <Banknote className="h-4 w-4" />
+      case 'card':
+        return <CreditCard className="h-4 w-4" />
+      case 'transfer':
+        return <Send className="h-4 w-4" />
+      default:
+        return <CreditCard className="h-4 w-4" />
+    }
+  }
+
+  const getPaymentMethodText = (method) => {
+    switch (method) {
+      case 'cash':
+        return 'Espèces'
+      case 'card':
+        return 'Carte Bancaire'
+      case 'transfer':
+        return 'Virement'
+      default:
+        return method || 'Non spécifié'
     }
   }
 
@@ -162,10 +223,10 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
               <span className="ml-3">Chargement des détails...</span>
             </div>
           ) : (
-            <div className="grid  gap-3  ">
+            <div className="grid gap-4">
               {/* Informations Générales */}
               <Card>
-                <CardHeader className="pb-3 lg:col-span-3">
+                <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                     <FileText className="h-4 w-4 md:h-5 md:w-5" />
                     Informations Générales
@@ -197,7 +258,7 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
 
               {/* Informations Client */}
               <Card>
-                <CardHeader className="pb-3  lg:col-span-3">
+                <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                     <User className="h-4 w-4 md:h-5 md:w-5" />
                     Informations Client
@@ -216,6 +277,81 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
                     <span className="font-medium">Vendeur:</span>
                     <span>{currentSale.user?.username || 'N/A'}</span>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Historique des Paiements */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <History className="h-4 w-4 md:h-5 md:w-5" />
+                    Historique des Paiements
+                    <Badge variant="outline" className="ml-2">
+                      {paymentHistory.length} paiement(s)
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingPayments ? (
+                    <div className="flex justify-center items-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      <span className="ml-2 text-sm">Chargement des paiements...</span>
+                    </div>
+                  ) : paymentHistory.length > 0 ? (
+                    <div className="space-y-3">
+                      {paymentHistory.map((payment, index) => (
+                        <div key={payment.id} className="flex items-center justify-between dark:text-black p-3 border rounded-lg bg-green-50  border-green-200">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-full bg-green-100 text-green-600">
+                              {getPaymentMethodIcon(payment.payment_method)}
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm md:text-base">
+                                {getPaymentMethodText(payment.payment_method)}
+                              </div>
+                              <div className="text-xs md:text-sm text-muted-foreground">
+                                {payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('fr-FR') : 'Date inconnue'}
+                                {payment.description && ` • ${payment.description}`}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold text-green-600 text-sm md:text-base">
+                              {payment.amount?.toFixed(2)} DH
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              #{index + 1}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Résumé des paiements */}
+                      <div className="border-t pt-3 mt-3 space-y-2">
+                        <div className="flex justify-between text-sm md:text-base">
+                          <span>Total payé:</span>
+                          <span className="font-semibold text-green-600">
+                            {paymentHistory.reduce((total, payment) => total + (payment.amount || 0), 0).toFixed(2)} DH
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm md:text-base">
+                          <span>Dernier paiement:</span>
+                          <span className="font-medium">
+                            {paymentHistory.length > 0 
+                              ? new Date(paymentHistory[0].payment_date).toLocaleDateString('fr-FR')
+                              : 'Aucun'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground text-sm md:text-base">
+                      <CreditCard className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>Aucun paiement enregistré</p>
+                      <p className="text-xs">Les paiements apparaîtront ici lorsqu'ils seront effectués</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -261,7 +397,7 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
               </Card>
 
               {/* Articles de la Vente */}
-              <Card className="">
+              <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                     <Package className="h-4 w-4 md:h-5 md:w-5" />
@@ -332,6 +468,10 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
         <PrintInvoice 
           sale={{
             ...currentSale,
+            sale_items: currentSale.sale_items?.map(item => ({
+              ...item,
+              product: item.product || { name: 'Produit inconnu' } // Ensure product exists
+            })) || [],
             transport: transport || null,
             job: job || null
           }} 
