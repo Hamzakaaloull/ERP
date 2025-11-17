@@ -128,6 +128,8 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
         }
 
         let response
+        let productId
+
         if (product && products.length === 1) {
           // Mode édition d'un seul produit
           response = await fetch(`${API_URL}/api/products/${product.documentId}`, {
@@ -138,6 +140,14 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
             },
             body: JSON.stringify(payload)
           })
+          const result = await response.json()
+          productId = product.documentId
+          
+          if (response.ok) {
+            results.push(result)
+          } else {
+            throw new Error(result.error?.message || 'Erreur lors de la mise à jour')
+          }
         } else {
           // Mode création (multiple ou simple)
           response = await fetch(`${API_URL}/api/products`, {
@@ -148,17 +158,20 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
             },
             body: JSON.stringify(payload)
           })
+          const result = await response.json()
+          console.log('Created product:', result)
+          productId = result.data?.id
+          
+          if (response.ok) {
+            results.push(result)
+          } else {
+            throw new Error(result.error?.message || 'Erreur lors de la création')
+          }
         }
 
-        const result = await response.json()
-
-        if (response.ok) {
-          if (productData.photo) {
-            await uploadPhoto(result.data.id, productData.photo)
-          }
-          results.push(result)
-        } else {
-          throw new Error(result.error?.message || 'Erreur lors de la sauvegarde')
+        // Upload de la photo après création/mise à jour du produit
+        if (productData.photo && productId) {
+          await uploadPhoto(productId, productData.photo)
         }
       }
 
@@ -182,15 +195,26 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
       formData.append('refId', productId)
       formData.append('field', 'photo')
 
-      await fetch(`${API_URL}/api/upload`, {
+      const uploadResponse = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formData
       })
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text()
+        console.error('Erreur upload photo:', errorText)
+        throw new Error(`Échec de l'upload de la photo: ${uploadResponse.status}`)
+      }
+
+      const uploadResult = await uploadResponse.json()
+      console.log('Upload photo réussi:', uploadResult)
+      return uploadResult
     } catch (error) {
       console.error('Erreur lors de l\'upload de la photo:', error)
+      throw error
     }
   }
 

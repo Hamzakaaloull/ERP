@@ -22,7 +22,6 @@ import ModeToggle from "@/components/button-tugle"
 // Lazy load components
 const UtilisateursPage = lazy(() => import("../../components/Users/page"))
 const TableauDeBord = lazy(() => import("../../components/TableauDeBord/page"))
-const Rapports = lazy(() => import("../../components/Rapports/page"))
 const References = lazy(() => import("../../components/References/page"))
 const Parametres = lazy(() => import("../../components/Parametres/page"))
 const Sales = lazy(() => import("../../components/Sales/page"))
@@ -77,7 +76,6 @@ function MainContent() {
         case 'Stock_Mouvements': return <Stock_Mouvements />
         case 'Debts': return <Debts />
         case 'TableauDeBord': return <TableauDeBord />
-        case 'Rapports': return <Rapports />
         case 'References': return <References />
         case 'Parametres': return <Parametres />
         case 'Assistance': return <Assistance />
@@ -108,7 +106,6 @@ function MainContent() {
                   {activeComponent === 'Debts' && 'Debts'}
                   {activeComponent === 'Stock_Mouvements' && 'Stock Mouvements'}
                   {activeComponent === 'TableauDeBord' && 'Tableau de Bord'}
-                  {activeComponent === 'Rapports' && 'Statistiques et Rapports'}
                   {activeComponent === 'References' && 'Gestion des Références'}
                   {activeComponent === 'Parametres' && 'Paramètres'}
                   {activeComponent === 'Assistance' && 'Assistance'}
