@@ -115,23 +115,23 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
       for (const productData of products) {
         if (!productData.name.trim()) continue // Skip empty products
 
-        const payload = {
-          data: {
-            name: productData.name,
-            unit: productData.unit,
-            price: parseFloat(productData.price) || 0,
-            price_achat: parseFloat(productData.price_achat) || 0,
-            stock_quantity: parseInt(productData.stock_quantity) || 0,
-            description: productData.description,
-            category: productData.category ? parseInt(productData.category) : null
-          }
-        }
-
-        let response
         let productId
+        let response
 
         if (product && products.length === 1) {
           // Mode édition d'un seul produit
+          const payload = {
+            data: {
+              name: productData.name,
+              unit: productData.unit,
+              price: parseFloat(productData.price) || 0,
+              price_achat: parseFloat(productData.price_achat) || 0,
+              stock_quantity: parseInt(productData.stock_quantity) || 0,
+              description: productData.description,
+              category: productData.category ? parseInt(productData.category) : null
+            }
+          }
+
           response = await fetch(`${API_URL}/api/products/${product.documentId}`, {
             method: 'PUT',
             headers: {
@@ -140,6 +140,7 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
             },
             body: JSON.stringify(payload)
           })
+          
           const result = await response.json()
           productId = product.documentId
           
@@ -150,6 +151,18 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
           }
         } else {
           // Mode création (multiple ou simple)
+          const payload = {
+            data: {
+              name: productData.name,
+              unit: productData.unit,
+              price: parseFloat(productData.price) || 0,
+              price_achat: parseFloat(productData.price_achat) || 0,
+              stock_quantity: parseInt(productData.stock_quantity) || 0,
+              description: productData.description,
+              category: productData.category ? parseInt(productData.category) : null
+            }
+          }
+
           response = await fetch(`${API_URL}/api/products`, {
             method: 'POST',
             headers: {
@@ -158,9 +171,9 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
             },
             body: JSON.stringify(payload)
           })
+          
           const result = await response.json()
-          console.log('Created product:', result)
-          productId = result.data?.id
+          productId = result.data?.documentId
           
           if (response.ok) {
             results.push(result)
@@ -169,9 +182,9 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
           }
         }
 
-        // Upload de la photo après création/mise à jour du produit
+        // Upload de la photo et liaison au produit
         if (productData.photo && productId) {
-          await uploadPhoto(productId, productData.photo)
+          await uploadAndLinkPhoto(productId, productData.photo)
         }
       }
 
@@ -186,34 +199,57 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
     }
   }
 
-  const uploadPhoto = async (productId, photoFile) => {
+  const uploadAndLinkPhoto = async (productId, photoFile) => {
     try {
       const token = localStorage.getItem('token')
-      const formData = new FormData()
-      formData.append('files', photoFile)
-      formData.append('ref', 'api::product.product')
-      formData.append('refId', productId)
-      formData.append('field', 'photo')
+      
+      // Étape 1: Upload de la photo
+      const uploadFormData = new FormData()
+      uploadFormData.append('files', photoFile)
 
       const uploadResponse = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         },
-        body: formData
+        body: uploadFormData
       })
 
       if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text()
-        console.error('Erreur upload photo:', errorText)
         throw new Error(`Échec de l'upload de la photo: ${uploadResponse.status}`)
       }
 
       const uploadResult = await uploadResponse.json()
       console.log('Upload photo réussi:', uploadResult)
-      return uploadResult
+
+      // Étape 2: Lier la photo au produit
+      if (uploadResult && uploadResult.length > 0) {
+        const photoId = uploadResult[0].id
+        
+        const linkPayload = {
+          data: {
+            photo: photoId
+          }
+        }
+
+        const linkResponse = await fetch(`${API_URL}/api/products/${productId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(linkPayload)
+        })
+
+        if (!linkResponse.ok) {
+          throw new Error('Erreur lors de la liaison de la photo au produit')
+        }
+
+        console.log('Photo liée au produit avec succès')
+        return uploadResult
+      }
     } catch (error) {
-      console.error('Erreur lors de l\'upload de la photo:', error)
+      console.error('Erreur lors de l\'upload et liaison de la photo:', error)
       throw error
     }
   }
