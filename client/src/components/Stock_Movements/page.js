@@ -170,7 +170,7 @@ export default function StockMovementsPage() {
         newStockQuantity = currentStock - movement.quantity
       }
 
-      // Ensure stock doesn't go negative
+      // S'assurer que le stock ne devient pas négatif
       if (newStockQuantity < 0) {
         throw new Error(`Stock insuffisant. Stock actuel: ${currentStock}, tentative de retrait: ${movement.quantity}`)
       }
@@ -195,7 +195,7 @@ export default function StockMovementsPage() {
         newStockQuantity = currentStock + movement.quantity
       }
 
-      // Ensure stock doesn't go negative when reverting
+      // S'assurer que le stock ne devient pas négatif lors de la réversion
       if (newStockQuantity < 0) {
         console.warn(`Attention: Le stock deviendrait négatif lors de la réversion. Stock actuel: ${currentStock}`)
         newStockQuantity = 0
@@ -214,12 +214,12 @@ export default function StockMovementsPage() {
     try {
       const token = localStorage.getItem('token')
       
-      // Revert stock changes first
+      // Révertir les changements de stock d'abord
       if (movementToDelete.product && movementToDelete.type !== 'ADJUST') {
         await revertStockChange(movementToDelete, movementToDelete.product)
       }
       
-      // Delete the movement
+      // Supprimer le mouvement
       const response = await fetch(`${API_URL}/api/stock-movements/${movementToDelete.documentId}`, {
         method: 'DELETE',
         headers: {
@@ -228,9 +228,9 @@ export default function StockMovementsPage() {
       })
 
       if (response.ok) {
-        // Refresh data
+        // Actualiser les données
         await fetchMovements()
-        await fetchProducts() // Refresh products to get updated stock
+        await fetchProducts() // Actualiser les produits pour obtenir le stock mis à jour
       } else {
         throw new Error('Erreur lors de la suppression')
       }
@@ -277,7 +277,7 @@ export default function StockMovementsPage() {
   const handleFormSuccess = async () => {
     setIsDialogOpen(false)
     setEditingMovement(null)
-    // Refresh both movements and products to get updated stock
+    // Actualiser les mouvements et les produits pour obtenir le stock mis à jour
     await fetchMovements()
     await fetchProducts()
   }
@@ -368,7 +368,7 @@ export default function StockMovementsPage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
+        {/* En-tête */}
         <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             Mouvements de Stock
@@ -378,7 +378,7 @@ export default function StockMovementsPage() {
           </p>
         </div>
 
-        {/* Stats Cards */}
+        {/* Cartes de statistiques */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="relative overflow-hidden border-l-4 border-l-primary">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -427,11 +427,11 @@ export default function StockMovementsPage() {
           </Card>
         </div>
 
-        {/* Main Content */}
+        {/* Contenu principal */}
         <Card className="border-0 shadow-lg">
           <CardContent className="p-6">
             <div className="space-y-6">
-              {/* Header avec Actions */}
+              {/* En-tête avec Actions */}
               <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
                 <div className="flex flex-col sm:flex-row gap-4 flex-1 w-full">
                   <div className="relative flex-1 max-w-md">

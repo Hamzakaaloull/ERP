@@ -20,7 +20,9 @@ import {
   RefreshCw, 
   Package,
   Calendar,
-  Hash
+  Hash,
+  Search,
+  X
 } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL
@@ -36,6 +38,8 @@ export default function StockMovementForm({ movement, products, onSuccess, onCan
   })
   const [loading, setLoading] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [productSearch, setProductSearch] = useState('')
+  const [filteredProducts, setFilteredProducts] = useState([])
 
   useEffect(() => {
     if (formData.product) {
@@ -43,6 +47,18 @@ export default function StockMovementForm({ movement, products, onSuccess, onCan
       setSelectedProduct(product)
     }
   }, [formData.product, products])
+
+  useEffect(() => {
+    if (productSearch) {
+      const filtered = products.filter(product => 
+        product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+        product.documentId.toLowerCase().includes(productSearch.toLowerCase())
+      )
+      setFilteredProducts(filtered)
+    } else {
+      setFilteredProducts(products)
+    }
+  }, [productSearch, products])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -143,6 +159,15 @@ export default function StockMovementForm({ movement, products, onSuccess, onCan
     }
   }
 
+  const clearProductSearch = () => {
+    setProductSearch('')
+  }
+
+  const handleProductSelect = (productId) => {
+    setFormData({ ...formData, product: productId })
+    setProductSearch('')
+  }
+
   const typeConfig = getTypeConfig(formData.type)
 
   return (
@@ -205,32 +230,101 @@ export default function StockMovementForm({ movement, products, onSuccess, onCan
                     <Label htmlFor="product" className="flex items-center gap-2">
                       Produit <Badge variant="destructive" className="text-xs">Requis</Badge>
                     </Label>
-                    <Select value={formData.product} onValueChange={(value) => setFormData({ ...formData, product: value })}>
-                      <SelectTrigger className="bg-background">
-                        <SelectValue placeholder="Sélectionner un produit" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.isArray(products) && products.map(product => (
-                          <SelectItem key={product.documentId} value={product.documentId}>
-                            <div className="flex items-center gap-2">
-                              {product.photo ? (
-                                <img
-                                  src={`${API_URL}${product.photo.url}`}
-                                  alt={product.name}
-                                  className="w-6 h-6 rounded object-cover"
-                                />
-                              ) : (
-                                <Package className="h-4 w-4 text-muted-foreground" />
-                              )}
-                              <span>{product.name}</span>
-                              <Badge variant="outline" className="ml-2 text-xs">
-                                Stock: {product.stock_quantity || 0}
-                              </Badge>
+                    
+                    {/* Recherche de produit */}
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Rechercher un produit..."
+                          value={productSearch}
+                          onChange={(e) => setProductSearch(e.target.value)}
+                          className="pl-10 pr-10 bg-background"
+                        />
+                        {productSearch && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1 h-6 w-6 p-0"
+                            onClick={clearProductSearch}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="max-h-60 overflow-y-auto border rounded-lg">
+                        {filteredProducts.length > 0 ? (
+                          filteredProducts.map(product => (
+                            <div
+                              key={product.documentId}
+                              className={`p-3 border-b cursor-pointer  hover:bg-muted/50 transition-colors ${
+                                formData.product === product.documentId ? 'bg-blue-50 border-blue-200' : ''
+                              }`}
+                              onClick={() => handleProductSelect(product.documentId)}
+                            >
+                              <div className="flex items-center gap-3">
+                                {product.photo ? (
+                                  <img
+                                    src={`${API_URL}${product.photo.url}`}
+                                    alt={product.name}
+                                    className="w-10 h-10 rounded-lg object-cover border"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center border">
+                                    <Package className="h-5 w-5 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate bg-muted/80 p-1 w-min rounded">{product.name}</div>
+                                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                    <span>ID: {product.documentId}</span>
+                                    <Badge variant="outline" className="text-xs">
+                                      Stock: {product.stock_quantity || 0}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                {formData.product === product.documentId && (
+                                  <Badge variant="default" className="bg-green-600 mb-10">
+                                    Sélectionné
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-muted-foreground">
+                            <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>Aucun produit trouvé</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {selectedProduct && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          {selectedProduct.photo ? (
+                            <img
+                              src={`${API_URL}${selectedProduct.photo.url}`}
+                              alt={selectedProduct.name}
+                              className="w-12 h-12 rounded-lg object-cover border"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center border">
+                              <Package className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <div className="font-semibold text-green-800">{selectedProduct.name}</div>
+                            <div className="text-sm text-green-600">
+                              Stock actuel: <strong>{selectedProduct.stock_quantity || 0}</strong> unités
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-3">
@@ -249,8 +343,9 @@ export default function StockMovementForm({ movement, products, onSuccess, onCan
                       className="bg-background"
                     />
                     {selectedProduct && formData.type === 'OUT' && formData.quantity > (selectedProduct.stock_quantity || 0) && (
-                      <p className="text-sm text-red-600">
-                        ⚠️ Attention: Stock insuffisant. Stock actuel: {selectedProduct.stock_quantity || 0}
+                      <p className="text-sm text-red-600 flex items-center gap-2">
+                        <span className="text-lg">⚠️</span>
+                        Attention: Stock insuffisant. Stock actuel: {selectedProduct.stock_quantity || 0}
                       </p>
                     )}
                   </div>
@@ -352,8 +447,9 @@ export default function StockMovementForm({ movement, products, onSuccess, onCan
                   
                   {formData.type === 'OUT' && formData.quantity > (selectedProduct.stock_quantity || 0) && (
                     <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-red-700 text-sm font-medium">
-                        ❌ Stock insuffisant! Le stock ne peut pas devenir négatif.
+                      <p className="text-red-700 text-sm font-medium flex items-center gap-2">
+                        <span className="text-lg">❌</span>
+                        Stock insuffisant! Le stock ne peut pas devenir négatif.
                       </p>
                     </div>
                   )}
@@ -379,7 +475,7 @@ export default function StockMovementForm({ movement, products, onSuccess, onCan
       </div>
 
       {/* Fixed Footer */}
-      <div className="flex-shrink-0 flex justify-end gap-3 p-6 border-t  mb-10">
+      <div className="flex-shrink-0 flex justify-end gap-3 p-6 border-t mb-10">
         <Button type="button" className="dark:text-white" variant="outline" onClick={onCancel} disabled={loading}>
           Annuler
         </Button>

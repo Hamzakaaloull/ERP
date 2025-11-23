@@ -37,7 +37,9 @@ import {
   Edit,
   Save,
   Truck,
-  Briefcase
+  Briefcase,
+  CheckSquare,
+  Square
 } from 'lucide-react'
 import PrintInvoice from './print-invoice'
 
@@ -157,6 +159,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
   // États pour le paiement
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [paidAmount, setPaidAmount] = useState('')
+  const [isPaid, setIsPaid] = useState(false)
   
   // États pour les calculs
   const [subtotal, setSubtotal] = useState(0)
@@ -191,13 +194,16 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
   }, [cart, discount, transportPrice, jobPrice])
 
   useEffect(() => {
-    if (paidAmount) {
+    if (isPaid) {
+      setPaidAmount(grandTotal.toString())
+      setRemainingAmount(0)
+    } else if (paidAmount) {
       const paid = parseFloat(paidAmount) || 0
       setRemainingAmount(Math.max(0, grandTotal - paid))
     } else {
       setRemainingAmount(grandTotal)
     }
-  }, [grandTotal, paidAmount])
+  }, [grandTotal, paidAmount, isPaid])
 
   useEffect(() => {
     if (selectedProduct) {
@@ -372,7 +378,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
     try {
       const token = localStorage.getItem('token')
       const saleDate = new Date().toISOString()
-      const paid = parseFloat(paidAmount) || 0
+      const paid = isPaid ? grandTotal : (parseFloat(paidAmount) || 0)
       const remaining = Math.max(0, grandTotal - paid)
 
       // Préparer les données de la vente
@@ -384,8 +390,6 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
         client: parseInt(selectedClient),
         user: currentUser?.id
       }
-
-      
 
       // Créer la vente
       const saleResponse = await fetch(`${API_URL}/api/sales`, {
@@ -406,8 +410,6 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
       const saleResult = await saleResponse.json()
       const saleId = saleResult.data.documentId
 
-      
-
       // Créer les items de vente
       for (const item of cart) {
         const saleItemData = {
@@ -417,8 +419,6 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
           sale: saleId,
           product: item.product.documentId
         }
-
-   
 
         const itemResponse = await fetch(`${API_URL}/api/sale-items`, {
           method: 'POST',
@@ -435,7 +435,6 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
 
         // Mettre à jour le stock du produit
         const newStock = item.product.stock_quantity - item.quantity
-        
 
         await fetch(`${API_URL}/api/products/${item.product.documentId}`, {
           method: 'PUT',
@@ -526,36 +525,35 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
       })
 
       // Préparer les données pour l'impression
-    // In create-sale-dialog.js - Update the saleForPrint creation
-const saleForPrint = {
-  id: saleId,
-  total_amount: grandTotal,
-  paid_amount: paid,
-  remaining_amount: remaining,
-  sale_date: saleDate,
-  client: {
-    name: clients.find(c => c.id.toString() === selectedClient)?.name || 'Client',
-    phone: clients.find(c => c.id.toString() === selectedClient)?.phone || ''
-  },
-  sale_items: cart.map(item => ({
-    product: { 
-      name: item.product.name,
-      // Add other product fields if needed
-      ...item.product
-    },
-    quantity: item.quantity,
-    unit_price: item.unit_price,
-    total_price: item.total_price
-  })),
-  transport: transportName ? {
-    name: transportName,
-    price: parseFloat(transportPrice) || 0
-  } : null,
-  job: jobName ? {
-    name: jobName,
-    price: parseFloat(jobPrice) || 0
-  } : null
-}
+      const saleForPrint = {
+        id: saleId,
+        total_amount: grandTotal,
+        paid_amount: paid,
+        remaining_amount: remaining,
+        sale_date: saleDate,
+        client: {
+          name: clients.find(c => c.id.toString() === selectedClient)?.name || 'Client',
+          phone: clients.find(c => c.id.toString() === selectedClient)?.phone || ''
+        },
+        sale_items: cart.map(item => ({
+          product: { 
+            name: item.product.name,
+            // Add other product fields if needed
+            ...item.product
+          },
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price
+        })),
+        transport: transportName ? {
+          name: transportName,
+          price: parseFloat(transportPrice) || 0
+        } : null,
+        job: jobName ? {
+          name: jobName,
+          price: parseFloat(jobPrice) || 0
+        } : null
+      }
 
       setLastCreatedSale(saleForPrint)
 
@@ -1136,6 +1134,24 @@ const saleForPrint = {
                 </Select>
               </div>
 
+              {/* Checkbox for marking as paid */}
+              <div className="flex items-center space-x-2 pt-2 pb-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsPaid(!isPaid)}
+                  className="flex items-center space-x-2 p-2 h-auto"
+                >
+                  {isPaid ? (
+                    <CheckSquare className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Square className="h-5 w-5 text-gray-400" />
+                  )}
+                  <span className="text-sm font-medium">Marquer comme payée</span>
+                </Button>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="paidAmount" className="text-sm md:text-lg">Montant Payé (DH)</Label>
                 <Input
@@ -1147,6 +1163,7 @@ const saleForPrint = {
                   onChange={(e) => setPaidAmount(e.target.value)}
                   className="bg-background h-10 md:h-12 text-sm md:text-base"
                   placeholder="0.00"
+                  disabled={isPaid}
                 />
               </div>
 
@@ -1234,6 +1251,8 @@ const saleForPrint = {
                         setTransportPrice('')
                         setJobName('')
                         setJobPrice('')
+                        setIsPaid(false)
+                        setPaidAmount('')
                       }}
                       disabled={loading}
                       className="text-xs md:text-lg"
