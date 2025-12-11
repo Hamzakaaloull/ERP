@@ -65,6 +65,10 @@ export default function UserTable({
                     <img 
                       src={`${API_URL}${user.profile.url}`}
                       alt={user.username}
+                      width={40}
+                      height={40}
+                      loading="lazy"
+                      decoding="async"
                       className="w-10 h-auto rounded-lg object-cover border border-border"
                     />
                   ) : (

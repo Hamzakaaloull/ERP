@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef, lazy, Suspense } from "react";
-import { useEffect } from "react";
+import React, { useState, useRef, lazy, Suspense, useEffect } from "react";
+import dynamic from 'next/dynamic';
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { 
@@ -13,7 +13,12 @@ import {
   Moon
 } from "lucide-react";
 import { motion, AnimatePresence } from 'motion/react';
-import Particles from "./Particles"
+
+// Load Particles only on the client and lazily to avoid impacting LCP/SSR
+const Particles = dynamic(() => import('./Particles'), {
+  ssr: false,
+  loading: () => <div aria-hidden />,
+});
 
 // Lazy load Lottie
 const DotLottieReact = lazy(() =>
@@ -35,13 +40,50 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [theme, setTheme] = useState("light");
-
-  const [isOnline, setIsOnline] = useState(true);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const usernameRef = useRef(null);
   const API = process.env.NEXT_PUBLIC_STRAPI_API_URL;
 
+  // Vérifier l'authentification au chargement
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        setIsCheckingAuth(false);
+        return;
+      }
+
+      try {
+        // Vérifier si le token est toujours valide
+        const userRes = await fetch(`${API}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (userRes.ok) {
+          // Token valide, rediriger vers le dashboard
+          router.push("/dashboard");
+        } else {
+          // Token invalide, nettoyer le localStorage
+          localStorage.removeItem("token");
+          localStorage.removeItem("userName");
+          localStorage.removeItem("activeComponent");
+          localStorage.removeItem("sidebarItems");
+          setIsCheckingAuth(false);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification de l'authentification:", error);
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, [router, API]);
+
   // Effet d'animation et auto-focus
   useEffect(() => {
+    if (isCheckingAuth) return;
+    
     const timer = setTimeout(() => {
       if (usernameRef.current) {
         usernameRef.current.focus();
@@ -49,28 +91,7 @@ export default function LoginPage() {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, []);
-
-  // Vérification de l'état du réseau
-  useEffect(() => {
-    setIsOnline(navigator.onLine);
-    
-    const handleOnline = () => {
-      setIsOnline(true);
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
+  }, [isCheckingAuth]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,11 +99,6 @@ export default function LoginPage() {
     
     if (!username || !password) {
       setError("Veuillez remplir tous les champs.");
-      return;
-    }
-
-    if (!isOnline) {
-      setError("Vous êtes hors ligne. Veuillez vérifier votre connexion internet.");
       return;
     }
 
@@ -153,8 +169,6 @@ export default function LoginPage() {
       setTimeout(() => {
         if (roleName === "admin") {
           router.push("/dashboard");
-        } else if (roleName === "maintenance_technician") {
-          router.push("/maintenance_technician");
         } else {
           setError("Accès non autorisé");
           router.push("/");
@@ -172,7 +186,8 @@ export default function LoginPage() {
     setTheme(newTheme);
     document.documentElement.classList.toggle("dark");
   };
-// Définir les couleurs en fonction du thème
+
+  // Définir les couleurs en fonction du thème
   const hyperspeedColors = theme === "light" 
     ? [
       '#ffffffff',
@@ -180,21 +195,37 @@ export default function LoginPage() {
     ]
     : ['#000000ff', '#000000ff'];
 
+  // Afficher un loader pendant la vérification de l'authentification
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
+        <div className="flex flex-col items-center gap-4">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="h-12 w-12 rounded-full border-4 border-gray-300 border-t-gray-700 dark:border-gray-700 dark:border-t-gray-300"
+          />
+          <p className="text-gray-600 dark:text-gray-400">Vérification de l'authentification...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-  <div className="relative min-h-screen w-full overflow-hidden bg-white dark:bg-black"> {/* Changez ici */}
-  {/* Background Particles */}
-  <div className="absolute inset-0 z-0 bg-white dark:bg-black"> {/* Et ici */}
-    <Particles
-      particleColors={hyperspeedColors} // Corrigez le nom de la prop
-      particleCount={600}
-      particleSpread={10}
-      speed={0.1}
-      particleBaseSize={100}
-      moveParticlesOnHover={true}
-      alphaParticles={false}
-      disableRotation={false}
-    />
-  </div>
+    <div className="relative min-h-screen w-full overflow-hidden bg-white dark:bg-black">
+      {/* Background Particles */}
+      <div className="absolute inset-0 z-0 bg-white dark:bg-black">
+        <Particles
+          particleColors={hyperspeedColors}
+          particleCount={600}
+          particleSpread={10}
+          speed={0.1}
+          particleBaseSize={100}
+          moveParticlesOnHover={true}
+          alphaParticles={false}
+          disableRotation={false}
+        />
+      </div>
 
       <motion.div 
         initial={{ opacity: 0 }}
@@ -228,20 +259,6 @@ export default function LoginPage() {
             <Sun className="w-4 h-4 text-gray-700 dark:text-gray-300" />
           )}
         </motion.button>
-
-        {/* Indicateur de statut réseau */}
-        <AnimatePresence>
-          {!isOnline && (
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="absolute top-4 left-4 px-3 py-1 bg-yellow-100 border border-yellow-400 rounded-lg z-20"
-            >
-              <p className="text-yellow-700 text-xs">Hors ligne</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <motion.div
           initial={{ y: 50, opacity: 0, scale: 0.9 }}
@@ -362,7 +379,7 @@ export default function LoginPage() {
                       placeholder="Entrez votre nom d'utilisateur"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      disabled={loading || !isOnline}
+                      disabled={loading}
                       className="w-full pl-10 pr-4 py-2.5 bg-white/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 dark:focus:ring-gray-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       autoComplete="username"
                     />
@@ -393,7 +410,7 @@ export default function LoginPage() {
                       placeholder="Entrez votre mot de passe"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      disabled={loading || !isOnline}
+                      disabled={loading}
                       className="w-full pl-10 pr-10 py-2.5 bg-white/50 dark:bg-black/50 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-500 dark:focus:ring-gray-400 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       autoComplete="current-password"
                     />
@@ -403,7 +420,7 @@ export default function LoginPage() {
                     whileTap={{ scale: 0.8 }}
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    disabled={loading || !isOnline}
+                    disabled={loading}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-900 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label={showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe"}
                   >
@@ -431,7 +448,7 @@ export default function LoginPage() {
                   y: 0
                 }}
                 type="submit"
-                disabled={loading || !isOnline}
+                disabled={loading}
                 className="w-full py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-black font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-gray-500 text-sm mt-2 disabled:cursor-not-allowed"
               >
                 {loading ? (

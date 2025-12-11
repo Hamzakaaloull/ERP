@@ -520,9 +520,9 @@ export default function StockMovementsPage() {
               </div>
 
               {/* Tableau des Mouvements */}
-              <Card className="border shadow-sm">
+              <Card className="border shadow-sm w-full">
                 <CardHeader className="pb-3">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="overflow-auto      flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                       <CardTitle className="text-xl">Historique des mouvements</CardTitle>
                       <CardDescription>

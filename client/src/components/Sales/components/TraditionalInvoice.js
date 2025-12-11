@@ -29,7 +29,7 @@ export function Preview({ sale, payments, formatNumber, statusText, statusClassF
         </div>
         <div style={{ flex: 1, textAlign: "right" ,  marginTop: "0.5rem" }}>
           <div style={{ fontWeight: "bold", fontSize: "12px" }}>FATINI</div>
-          <div>OULLED ILLOUL , SOUK SEBT, MAROC</div>
+          <div>OULLED ILLOUL,SOUK SEBT, MAROC</div>
           <div>Tél: 0634616342</div>
         </div>
       </div>
@@ -212,7 +212,7 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
     <head>
       <meta charset="utf-8"/>
       <meta name="viewport" content="width=280px"/>
-      <title>Facture • ${escapeHtml(ticketCode)}</title>
+      <title>BON A • ${escapeHtml(ticketCode)}</title>
       <style>
         @page { 
           size: 100mm 200mm; 

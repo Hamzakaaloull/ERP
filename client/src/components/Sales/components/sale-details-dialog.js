@@ -211,7 +211,7 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
                   size="sm"
                 >
                   <Printer className="h-4 w-4" />
-                  Imprimer Facture
+                  Imprimer le BON
                 </Button>
               </div>
             </div>

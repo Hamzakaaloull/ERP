@@ -26,13 +26,13 @@ export function Preview({ sale, payments, formatNumber, statusText, statusClassF
       {/* En-tête */}
       <div className="flex justify-between items-start mb-8 pb-6 border-b border-gray-300">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">FACTURE</h1>
+          <h1 className="text-3xl font-bold text-gray-800">BON A</h1>
           <p className="text-gray-600">Oulled Iloul , Souk Sebt, Maroc</p>
         </div>
         
         <div className="text-right">
           <div className="mb-2">
-            <span className="text-gray-600">Facture N°: </span>
+            <span className="text-gray-600">BON N°: </span>
             <strong className="text-lg">{invoiceNumber}</strong>
           </div>
           <div>
@@ -44,7 +44,7 @@ export function Preview({ sale, payments, formatNumber, statusText, statusClassF
 
       {/* Informations client */}
       <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-700 mb-3">FACTURÉ À</h2>
+        <h2 className="text-lg font-semibold text-gray-700 mb-3">BON À</h2>
         <div className="bg-gray-50 p-4 rounded border border-gray-200">
           <p className="font-bold text-gray-800 text-lg">{sale?.client?.name || "Non spécifié"}</p>
           <p className="text-gray-600">Tél: {sale?.client?.phone || "-"}</p>
@@ -244,7 +244,7 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Facture ${escapeHtml(invoiceNumber)}</title>
+      <title>BON ${escapeHtml(invoiceNumber)}</title>
       <style>
         @page {
           size: A4;
@@ -396,13 +396,13 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
         <!-- En-tête -->
         <div class="header">
           <div>
-            <h1 style="font-size: 32px; font-weight: bold; color: #111827; margin: 0 0 4px 0;">FACTURE</h1>
+            <h1 style="font-size: 32px; font-weight: bold; color: #111827; margin: 0 0 4px 0;">BON</h1>
             <p style="color: #6b7280; margin: 0;">OULLED ILLOUL, SOUK SEBT, MAROC</p>
           </div>
           
           <div class="invoice-info">
             <div style="margin-bottom: 8px;">
-              <span style="color: #6b7280;">Facture N°: </span>
+              <span style="color: #6b7280;">BON N°: </span>
               <strong style="font-size: 18px;">${escapeHtml(invoiceNumber)}</strong>
             </div>
             <div>
@@ -414,7 +414,7 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
         
         <!-- Informations client -->
         <div class="client-info">
-          <h2 style="font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 12px;">FACTURÉ À</h2>
+          <h2 style="font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 12px;">BON À</h2>
           <div class="client-card">
             <p style="font-weight: bold; font-size: 18px; color: #111827; margin: 0 0 4px 0;">${escapeHtml(sale?.client?.name || "Non spécifié")}</p>
             <p style="color: #6b7280; margin: 0;">Tél: ${escapeHtml(sale?.client?.phone || "-")}</p>

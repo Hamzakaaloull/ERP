@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { ThemeProvider } from '@/components/theme-provider';
 import './globals.css';
 import CssBaseline from "@mui/material/CssBaseline";
-
+import { StockNotificationsProvider } from '@/contexts/stock-notifications-context'
 import { Toaster } from "sonner"
 export default function RootLayout({ children }) {
 
@@ -77,7 +77,9 @@ export default function RootLayout({ children }) {
             enableSystem
             disableTransitionOnChange
           >
+           <StockNotificationsProvider>
           {children}
+        </StockNotificationsProvider>
           <Toaster 
           position="top-right"
           theme="system"

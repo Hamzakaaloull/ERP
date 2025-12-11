@@ -1,7 +1,7 @@
+// nav-main.jsx
 "use client"
 
 import { ChevronRight } from "lucide-react";
-
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,9 +19,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 
-export function NavMain({
-  items 
-}) {
+export function NavMain({ items }) {
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Plateforme</SidebarGroupLabel>
@@ -42,9 +40,16 @@ export function NavMain({
                 `}
                 style={{ cursor: 'pointer' }}
               >
-                <a href={item.url}>
+                <a href={item.url} onClick={(e) => {
+                  e.preventDefault()
+                }}>
                   <item.icon />
-                  <span>{item.title}</span>
+                  <span className="flex-1">{item.title}</span>
+                  {item.badge && item.badge > 0 && (
+                    <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
                 </a>
               </SidebarMenuButton>
               {item.items?.length ? (
@@ -63,7 +68,10 @@ export function NavMain({
                             asChild
                             className="hover:bg-accent hover:text-accent-foreground transition-colors duration-200"
                           >
-                            <a href={subItem.url}>
+                            <a href={subItem.url} onClick={(e) => {
+                              e.preventDefault()
+                              if (subItem.onClick) subItem.onClick()
+                            }}>
                               <span>{subItem.title}</span>
                             </a>
                           </SidebarMenuSubButton>
@@ -78,5 +86,5 @@ export function NavMain({
         ))}
       </SidebarMenu>
     </SidebarGroup>
-  );
+  )
 }

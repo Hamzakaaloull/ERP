@@ -62,6 +62,10 @@ export default function ProfileImageUpload({ user, onImageChange }) {
               <img
                 src={previewUrl}
                 alt="Photo de profil"
+                width={128}
+                height={128}
+                loading="lazy"
+                decoding="async"
                 className="w-32 h-32 rounded-full object-cover border-4 border-primary shadow-lg"
               />
               <Button

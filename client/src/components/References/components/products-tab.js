@@ -88,6 +88,7 @@ export default function ProductsTab({ onUpdate }) {
         }
       })
       const data = await response.json()
+      console.log( "this is the products" , data )
     console.log( "Fetched products:", data)
       if (data && data.data) {
         setProducts(data.data)

@@ -18,6 +18,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import ModeToggle from "@/components/button-tugle"
+import { StockNotificationsProvider } from '@/contexts/stock-notifications-context'
 
 // Lazy load components
 const UtilisateursPage = lazy(() => import("../../components/Users/page"))
@@ -27,7 +28,7 @@ const Parametres = lazy(() => import("../../components/Parametres/page"))
 const Sales = lazy(() => import("../../components/Sales/page"))
 const Stock_Mouvements = lazy(() => import("../../components/Stock_Movements/page"))
 const Debts = lazy(() => import("../../components/Debts/page"))
-const Assistance = lazy(() => import("../../components/Assistance/page"))
+const NotificationsPage = lazy(() => import("../../components/notifications/page"))
 
 // Composant de chargement
 const LoadingFallback = () => (
@@ -35,8 +36,6 @@ const LoadingFallback = () => (
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
   </div>
 )
-
-
 
 function MainContent() {
   const { activeComponent } = useNavigation()
@@ -78,8 +77,8 @@ function MainContent() {
         case 'TableauDeBord': return <TableauDeBord />
         case 'References': return <References />
         case 'Parametres': return <Parametres />
-        case 'Assistance': return <Assistance />
-        default: return <UtilisateursPage />
+        case 'Notifications': return <NotificationsPage />
+        default: return <TableauDeBord />
       }
     } else {
       return <div>Rôle non autorisé</div>
@@ -108,7 +107,7 @@ function MainContent() {
                   {activeComponent === 'TableauDeBord' && 'Tableau de Bord'}
                   {activeComponent === 'References' && 'Gestion des Références'}
                   {activeComponent === 'Parametres' && 'Paramètres'}
-                  {activeComponent === 'Assistance' && 'Assistance'}
+                  {activeComponent === 'Notifications' && 'Notifications'}
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
@@ -135,7 +134,6 @@ export default function Page() {
       window.location.href = "/"
     } else {
       setIsAuthenticated(true)
-      // Récupérer le rôle de l'utilisateur
       const fetchUserRole = async () => {
         try {
           const API = process.env.NEXT_PUBLIC_STRAPI_API_URL;
@@ -161,13 +159,14 @@ export default function Page() {
     return null
   }
 
-  // إذا كان المستخدم admin، عرض الداشبورد الكامل
   return (
-    <NavigationProvider>
-      <SidebarProvider>
-        <AppSidebar />
-        <MainContent />
-      </SidebarProvider>
-    </NavigationProvider>
+    <StockNotificationsProvider>
+      <NavigationProvider>
+        <SidebarProvider>
+          <AppSidebar />
+          <MainContent />
+        </SidebarProvider>
+      </NavigationProvider>
+    </StockNotificationsProvider>
   )
 }

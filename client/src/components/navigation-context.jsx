@@ -1,22 +1,33 @@
+// navigation-context.jsx
 "use client"
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useState, useContext, useMemo, useCallback } from 'react'
 
 const NavigationContext = createContext()
 
 export function NavigationProvider({ children }) {
-  const [activeComponent, setActiveComponent] = useState('Utilisateurs')
+  const [activeComponent, setActiveComponentInternal] = useState('TableauDeBord')
+
+  // Mémoïser setActiveComponent pour éviter les re-rendus
+  const setActiveComponent = useCallback((component) => {
+    setActiveComponentInternal(component)
+  }, [])
+
+  const value = useMemo(() => ({
+    activeComponent,
+    setActiveComponent
+  }), [activeComponent, setActiveComponent])
 
   return (
-    <NavigationContext.Provider value={{ activeComponent, setActiveComponent }}>
+    <NavigationContext.Provider value={value}>
       {children}
     </NavigationContext.Provider>
   )
 }
 
-export function useNavigation() {
+export const useNavigation = () => {
   const context = useContext(NavigationContext)
   if (!context) {
-    throw new Error('useNavigation doit être utilisé dans un NavigationProvider')
+    throw new Error('useNavigation must be used within NavigationProvider')
   }
   return context
 }
