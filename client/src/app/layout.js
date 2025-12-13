@@ -58,7 +58,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="icons/icon-48x48.png" />
         <link rel="icon" type="image/png" sizes='32x32' href="icons/icon-72x72.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-96x96.png" />
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#000000ff" />
         <title>Gestion des Pannes</title>
         {/* Preload critical resources */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

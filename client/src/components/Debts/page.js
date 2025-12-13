@@ -245,109 +245,109 @@ export default function CreditsPage() {
   }
 
   const confirmMarkAsPaid = async () => {
-    const { item, type } = markAsPaidDialog
-    if (!item) return
+  const { item, type } = markAsPaidDialog
+  if (!item) return
 
-    try {
-      const token = localStorage.getItem('token')
+  try {
+    const token = localStorage.getItem('token')
+    
+    if (type === 'credit') {
+      const remainingAmount = item.amount - (item.paid_amount || 0)
       
-      if (type === 'credit') {
-        const remainingAmount = item.amount - (item.paid_amount || 0)
-        
-        // Update credit
-        const updateResponse = await fetch(`${API_URL}/api/credits/${item.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            data: {
-              paid_amount: item.amount,
-              statut: 'closed'
-            }
-          })
+      // Update credit - استخدم item.id للائتمان
+      const updateResponse = await fetch(`${API_URL}/api/credits/${item.documentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          data: {
+            paid_amount: item.amount,
+          
+          }
         })
+      })
 
-        if (!updateResponse.ok) {
-          throw new Error('Erreur lors de la mise à jour du crédit')
-        }
-
-        // Create payment history
-        if (remainingAmount > 0) {
-          await fetch(`${API_URL}/api/payment-histories`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              data: {
-                amount: remainingAmount,
-                payment_method: 'cash',
-                payment_date: new Date().toISOString(),
-                note: 'Ce paiement a été effectué automatiquement',
-                credit: item.documentId || item.id
-              }
-            })
-          })
-        }
-
-      } else if (type === 'sale') {
-        const remainingAmount = item.remaining_amount || 0
-        
-        // Update sale
-        const updateResponse = await fetch(`${API_URL}/api/sales/${item.documentId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            data: {
-              paid_amount: item.total_amount,
-              remaining_amount: 0
-            }
-          })
-        })
-
-        if (!updateResponse.ok) {
-          throw new Error('Erreur lors de la mise à jour de la vente')
-        }
-
-        // Create payment history
-        if (remainingAmount > 0) {
-          await fetch(`${API_URL}/api/payment-histories`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              data: {
-                amount: remainingAmount,
-                
-                payment_date: new Date().toISOString(),
-                note: 'Ce paiement a été effectué automatiquement',
-                sale: item.documentId || item.id
-              }
-            })
-          })
-        }
+      if (!updateResponse.ok) {
+        throw new Error('Erreur lors de la mise à jour du crédit')
       }
 
-      toast.success('Paiement complet enregistré avec succès!')
-      setMarkAsPaidDialog({ open: false, item: null, type: null })
+      // Create payment history
+      if (remainingAmount > 0) {
+        await fetch(`${API_URL}/api/payment-histories`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            data: {
+              amount: remainingAmount,
+              payment_method: 'cash',
+              payment_date: new Date().toISOString(),
+              note: 'Ce paiement a été effectué automatiquement',
+              credit: item.id
+            }
+          })
+        })
+      }
+
+    } else if (type === 'sale') {
+      const remainingAmount = item.remaining_amount || 0
       
-      // Refresh data
-      fetchCredits()
-      fetchSales()
-      
-    } catch (error) {
-      console.error('Erreur lors du marquage comme payé:', error)
-      toast.error('Erreur lors du marquage comme payé')
+      // Update sale - استخدم item.id للبيع
+      const updateResponse = await fetch(`${API_URL}/api/sales/${item.documentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          data: {
+            paid_amount: item.total_amount,
+            remaining_amount: 0
+          }
+        })
+      })
+
+      if (!updateResponse.ok) {
+        throw new Error('Erreur lors de la mise à jour de la vente')
+      }
+
+      // Create payment history
+      if (remainingAmount > 0) {
+        await fetch(`${API_URL}/api/payment-histories`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            data: {
+              amount: remainingAmount,
+             
+              payment_date: new Date().toISOString(),
+              note: 'Ce paiement a été effectué automatiquement',
+              sale: item.documentId
+            }
+          })
+        })
+      }
     }
+
+    toast.success('Paiement complet enregistré avec succès!')
+    setMarkAsPaidDialog({ open: false, item: null, type: null })
+    
+    // Refresh data
+    fetchCredits()
+    fetchSales()
+    
+  } catch (error) {
+    console.error('Erreur lors du marquage comme payé:', error)
+    toast.error('Erreur lors du marquage comme payé')
   }
+}
 
   // Filtrer les crédits par date
   const filterDebtsByDate = (debtsList) => {

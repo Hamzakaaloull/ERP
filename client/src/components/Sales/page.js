@@ -39,7 +39,10 @@ import {
   User,
   ArrowLeft,
   FileText,
-  Table as TableIcon
+  Table as TableIcon,
+  ChevronDown,
+  ChevronUp,
+  ArrowUpDown
 } from 'lucide-react'
 import CreateSaleDialog from './components/create-sale-dialog'
 import SaleDetailsDialog from './components/sale-details-dialog'
@@ -53,6 +56,7 @@ const API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL
 
 export default function SalesPage() {
   const [sales, setSales] = useState([])
+  const [allSales, setAllSales] = useState([]) // Store all sales
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -64,21 +68,40 @@ export default function SalesPage() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedSale, setSelectedSale] = useState(null)
+  const [expanded, setExpanded] = useState(false) // State for expanding table
+  const [visibleSalesCount, setVisibleSalesCount] = useState(25) // Default visible sales
+  const [paginationMeta, setPaginationMeta] = useState(null) // Store pagination metadata
+  const [sortConfig, setSortConfig] = useState({ key: 'sale_date', direction: 'desc' }) // Sort configuration
 
   useEffect(() => {
-    fetchSales()
+    fetchAllSales() // Fetch all sales without pagination
     fetchClients()
- 
   }, [])
 
-  
-
-  const fetchSales = async () => {
+  const fetchAllSales = async () => {
     try {
       const token = localStorage.getItem('token')
-      // تصحيح طلب API - إزالة populate غير الضروري
+      
+      // First, get total count to determine pagination
+      const countResponse = await fetch(
+        `${API_URL}/api/sales?pagination[pageSize]=1`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      )
+      
+      if (!countResponse.ok) {
+        throw new Error(`HTTP error! status: ${countResponse.status}`)
+      }
+      
+      const countData = await countResponse.json()
+      const total = countData.meta?.pagination?.total || 100
+      
+      // Fetch all sales in one request (adjust pageSize to a high number)
       const response = await fetch(
-        `${API_URL}/api/sales?populate=client&populate=user&populate=sale_items.product`,
+        `${API_URL}/api/sales?pagination[pageSize]=${total}&populate=client&populate=user&populate=sale_items.product&sort=sale_date:desc`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -93,18 +116,171 @@ export default function SalesPage() {
       const data = await response.json()
       
       if (data && data.data) {
-      
-        setSales(data.data)
+        // Sort by sale_date descending by default
+        const sortedData = [...data.data].sort((a, b) => {
+          const dateA = new Date(a.sale_date || 0)
+          const dateB = new Date(b.sale_date || 0)
+          return dateB - dateA // Descending
+        })
+        
+        setAllSales(sortedData) // Store all sales
+        setSales(sortedData.slice(0, visibleSalesCount)) // Show only first 25 by default
+        setPaginationMeta(data.meta)
       } else {
         console.error('Structure de données inattendue:', data)
+        setAllSales([])
         setSales([])
       }
     } catch (error) {
       console.error('Erreur lors du chargement des ventes:', error)
+      setAllSales([])
       setSales([])
     } finally {
       setLoading(false)
     }
+  }
+
+  // Function to sort sales
+  const sortSales = (key) => {
+    let direction = 'desc'
+    
+    // If clicking the same column, toggle direction
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc'
+    }
+    
+    setSortConfig({ key, direction })
+    
+    const sortedAllSales = [...allSales].sort((a, b) => {
+      let aValue, bValue
+      
+      switch (key) {
+        case 'id':
+          aValue = a.id
+          bValue = b.id
+          break
+        case 'client':
+          aValue = a.client?.name || ''
+          bValue = b.client?.name || ''
+          break
+        case 'total_amount':
+          aValue = a.total_amount || 0
+          bValue = b.total_amount || 0
+          break
+        case 'paid_amount':
+          aValue = a.paid_amount || 0
+          bValue = b.paid_amount || 0
+          break
+        case 'remaining_amount':
+          aValue = a.remaining_amount || 0
+          bValue = b.remaining_amount || 0
+          break
+        case 'sale_date':
+          aValue = new Date(a.sale_date || 0)
+          bValue = new Date(b.sale_date || 0)
+          break
+        default:
+          aValue = a[key] || ''
+          bValue = b[key] || ''
+      }
+      
+      if (direction === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
+      }
+    })
+    
+    setAllSales(sortedAllSales)
+    
+    // Update displayed sales
+    if (searchTerm || statusFilter !== 'all' || clientFilter !== 'all' || dateFrom || dateTo) {
+      setSales(sortedAllSales.filter(sale => matchesFilters(sale)))
+    } else {
+      setSales(sortedAllSales.slice(0, visibleSalesCount))
+    }
+  }
+
+  // Function to check if sale matches all filters
+  const matchesFilters = (sale) => {
+    const searchTermStr = searchTerm.toString().toLowerCase().trim()
+    
+    const matchesSearch = 
+      sale.id?.toString().toLowerCase().includes(searchTermStr) ||
+      sale.client?.name?.toLowerCase().includes(searchTermStr) ||
+      sale.user?.username?.toLowerCase().includes(searchTermStr) ||
+      sale.client?.phone?.toLowerCase().includes(searchTermStr) ||
+      sale.client?.email?.toLowerCase().includes(searchTermStr)
+
+    const remaining = sale.remaining_amount || 0
+    const paid = sale.paid_amount || 0
+    
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'paid' && remaining === 0 && paid > 0) ||
+      (statusFilter === 'partial' && paid > 0 && remaining > 0) ||
+      (statusFilter === 'unpaid' && paid === 0)
+
+    const matchesClient = clientFilter === 'all' || sale.client?.id?.toString() === clientFilter
+
+    // Filtre par date
+    let matchesDate = true
+    if (dateFrom || dateTo) {
+      const saleDate = sale.sale_date ? new Date(sale.sale_date) : null
+      
+      if (dateFrom && saleDate) {
+        const fromDate = new Date(dateFrom)
+        fromDate.setHours(0, 0, 0, 0)
+        if (saleDate < fromDate) {
+          matchesDate = false
+        }
+      }
+      
+      if (dateTo && saleDate) {
+        const toDate = new Date(dateTo)
+        toDate.setHours(23, 59, 59, 999)
+        if (saleDate > toDate) {
+          matchesDate = false
+        }
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesClient && matchesDate
+  }
+
+  // Function to load more sales
+  const loadMoreSales = () => {
+    const newCount = visibleSalesCount + 25
+    setVisibleSalesCount(newCount)
+    
+    if (searchTerm || statusFilter !== 'all' || clientFilter !== 'all' || dateFrom || dateTo) {
+      setSales(allSales.filter(sale => matchesFilters(sale)).slice(0, newCount))
+    } else {
+      setSales(allSales.slice(0, newCount))
+    }
+  }
+
+  // Function to show all sales
+  const showAllSales = () => {
+    setVisibleSalesCount(allSales.length)
+    
+    if (searchTerm || statusFilter !== 'all' || clientFilter !== 'all' || dateFrom || dateTo) {
+      setSales(allSales.filter(sale => matchesFilters(sale)))
+    } else {
+      setSales(allSales)
+    }
+    setExpanded(true)
+  }
+
+  // Function to collapse to default view
+  const collapseSales = () => {
+    setVisibleSalesCount(25)
+    
+    if (searchTerm || statusFilter !== 'all' || clientFilter !== 'all' || dateFrom || dateTo) {
+      setSales(allSales.filter(sale => matchesFilters(sale)).slice(0, 25))
+    } else {
+      setSales(allSales.slice(0, 25))
+    }
+    setExpanded(false)
   }
 
   const fetchClients = async () => {
@@ -148,11 +324,11 @@ export default function SalesPage() {
       doc.setFontSize(10)
       doc.setTextColor(100, 100, 100)
       doc.text(`Généré le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 25)
-      doc.text(`Total des ventes: ${filteredSales.length}`, 14, 30)
+      doc.text(`Total des ventes: ${allSales.length}`, 14, 30)
       doc.text(`Période: ${getDateRangeText()}`, 14, 35)
       
       // Préparer les données du tableau
-      const tableData = filteredSales.map(sale => [
+      const tableData = allSales.map(sale => [
         `#${sale.id}`,
         sale.client?.name || 'N/A',
         sale.user?.username || 'N/A',
@@ -203,9 +379,9 @@ export default function SalesPage() {
       doc.text('STATISTIQUES', 14, finalY)
       
       doc.setFontSize(10)
-      const totalRevenue = filteredSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
-      const totalPaid = filteredSales.reduce((sum, sale) => sum + (sale.paid_amount || 0), 0)
-      const totalRemaining = filteredSales.reduce((sum, sale) => sum + (sale.remaining_amount || 0), 0)
+      const totalRevenue = allSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
+      const totalPaid = allSales.reduce((sum, sale) => sum + (sale.paid_amount || 0), 0)
+      const totalRemaining = allSales.reduce((sum, sale) => sum + (sale.remaining_amount || 0), 0)
       
       doc.text(`Chiffre d'affaires total: ${totalRevenue.toFixed(2)} DH`, 14, finalY + 8)
       doc.text(`Total payé: ${totalPaid.toFixed(2)} DH`, 14, finalY + 16)
@@ -242,7 +418,7 @@ export default function SalesPage() {
       ]
       
       // Données CSV
-      const csvData = filteredSales.map(sale => [
+      const csvData = allSales.map(sale => [
         sale.id,
         sale.client?.name || 'N/A',
         sale.client?.phone || 'N/A',
@@ -326,7 +502,7 @@ export default function SalesPage() {
         throw new Error('Erreur lors de la suppression')
       }
 
-      fetchSales()
+      fetchAllSales()
     } catch (error) {
       console.error('Erreur lors de la suppression:', error)
       alert('Erreur lors de la suppression de la vente')
@@ -358,53 +534,39 @@ export default function SalesPage() {
 
   const handleSaleSuccess = () => {
     setIsCreatingSale(false)
-    fetchSales()
+    fetchAllSales()
   }
 
   const handleSaleCancel = () => {
     setIsCreatingSale(false)
   }
 
-  const filteredSales = sales.filter(sale => {
-    const matchesSearch = 
-      sale.id?.toString().includes(searchTerm) ||
-      sale.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sale.user?.username?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Enhanced search functionality
+  const filteredSales = allSales.filter(sale => matchesFilters(sale))
 
-    const remaining = sale.remaining_amount || 0
-    const paid = sale.paid_amount || 0
-    
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'paid' && remaining === 0 && paid > 0) ||
-      (statusFilter === 'partial' && paid > 0 && remaining > 0) ||
-      (statusFilter === 'unpaid' && paid === 0)
-
-    const matchesClient = clientFilter === 'all' || sale.client?.id?.toString() === clientFilter
-
-    // Filtre par date
-    let matchesDate = true
-    if (dateFrom || dateTo) {
-      const saleDate = sale.sale_date ? new Date(sale.sale_date) : null
-      
-      if (dateFrom && saleDate) {
-        const fromDate = new Date(dateFrom)
-        fromDate.setHours(0, 0, 0, 0)
-        if (saleDate < fromDate) {
-          matchesDate = false
-        }
-      }
-      
-      if (dateTo && saleDate) {
-        const toDate = new Date(dateTo)
-        toDate.setHours(23, 59, 59, 999)
-        if (saleDate > toDate) {
-          matchesDate = false
-        }
-      }
+  // Update sales display when filters change
+  useEffect(() => {
+    if (searchTerm || statusFilter !== 'all' || clientFilter !== 'all' || dateFrom || dateTo) {
+      // When searching/filtering, show all matching results
+      setSales(filteredSales)
+      setExpanded(true)
+    } else {
+      // When no filters, show paginated view
+      setSales(allSales.slice(0, visibleSalesCount))
+      setExpanded(visibleSalesCount >= allSales.length)
     }
+  }, [searchTerm, statusFilter, clientFilter, dateFrom, dateTo, visibleSalesCount, allSales])
 
-    return matchesSearch && matchesStatus && matchesClient && matchesDate
-  })
+  // Sort indicator component
+  const SortIndicator = ({ columnKey }) => {
+    if (sortConfig.key !== columnKey) {
+      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />
+    }
+    
+    return sortConfig.direction === 'asc' 
+      ? <ArrowUpDown className="h-3 w-3 ml-1 rotate-180" />
+      : <ArrowUpDown className="h-3 w-3 ml-1" />
+  }
 
   if (loading) {
     return (
@@ -466,7 +628,7 @@ export default function SalesPage() {
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl md:text-2xl font-bold">{sales.length}</div>
+              <div className="text-xl md:text-2xl font-bold">{allSales.length}</div>
               <p className="text-xs text-muted-foreground">Ventes totales</p>
             </CardContent>
           </Card>
@@ -477,7 +639,7 @@ export default function SalesPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl md:text-2xl font-bold">
-                {sales.reduce((total, sale) => total + (sale.total_amount || 0), 0).toFixed(2)}
+                {allSales.reduce((total, sale) => total + (sale.total_amount || 0), 0).toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground">Total encaissé</p>
             </CardContent>
@@ -489,7 +651,7 @@ export default function SalesPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl md:text-2xl font-bold text-destructive">
-                {sales.reduce((total, sale) => total + (sale.remaining_amount || 0), 0).toFixed(2)}
+                {allSales.reduce((total, sale) => total + (sale.remaining_amount || 0), 0).toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground">Montant impayé</p>
             </CardContent>
@@ -501,9 +663,9 @@ export default function SalesPage() {
             </CardHeader>
             <CardContent>
               <div className="text-xl md:text-2xl font-bold">
-                {sales.length > 0 
-                  ? ((sales.reduce((total, sale) => total + (sale.paid_amount || 0), 0) / 
-                      Math.max(sales.reduce((total, sale) => total + (sale.total_amount || 0), 0), 1)) * 100).toFixed(1)
+                {allSales.length > 0 
+                  ? ((allSales.reduce((total, sale) => total + (sale.paid_amount || 0), 0) / 
+                      Math.max(allSales.reduce((total, sale) => total + (sale.total_amount || 0), 0), 1)) * 100).toFixed(1)
                   : 0
                 }%
               </div>
@@ -522,7 +684,7 @@ export default function SalesPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher vente, client..."
+                  placeholder="Rechercher par ID, client, téléphone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 bg-background text-sm md:text-base"
@@ -603,7 +765,12 @@ export default function SalesPage() {
               <div>
                 <CardTitle className="text-lg md:text-xl">Historique des Ventes</CardTitle>
                 <CardDescription className="text-sm md:text-base">
-                  {filteredSales.length} vente(s) trouvée(s) sur {sales.length} au total
+                  {sales.length} vente(s) affichée(s) sur {allSales.length} au total
+                  {(searchTerm || statusFilter !== 'all' || clientFilter !== 'all' || dateFrom || dateTo) && (
+                    <span className="ml-2 text-primary">
+                      • {filteredSales.length} résultat(s) trouvé(s)
+                    </span>
+                  )}
                   {(dateFrom || dateTo) && (
                     <span className="ml-2 text-primary">
                       • {getDateRangeText()}
@@ -611,24 +778,46 @@ export default function SalesPage() {
                   )}
                 </CardDescription>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2 text-sm md:text-base">
-                    <Download className="h-4 w-4" />
-                    Exporter
+              <div className="flex gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="gap-2 text-sm md:text-base">
+                      <Download className="h-4 w-4" />
+                      Exporter
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={exportToPDF} className="text-sm">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Exporter en PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportToCSV} className="text-sm">
+                      <TableIcon className="h-4 w-4 mr-2" />
+                      Exporter en CSV
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {!expanded && visibleSalesCount < allSales.length && (
+                  <Button 
+                    variant="outline" 
+                    onClick={showAllSales}
+                    className="gap-2 text-sm md:text-base"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                    Tout afficher
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={exportToPDF} className="text-sm">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Exporter en PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={exportToCSV} className="text-sm">
-                    <TableIcon className="h-4 w-4 mr-2" />
-                    Exporter en CSV
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                )}
+                {expanded && (
+                  <Button 
+                    variant="outline" 
+                    onClick={collapseSales}
+                    className="gap-2 text-sm md:text-base"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                    Réduire
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -636,19 +825,67 @@ export default function SalesPage() {
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead className="text-xs md:text-sm">ID Vente</TableHead>
-                    <TableHead className="text-xs md:text-sm">Client</TableHead>
+                    <TableHead 
+                      className="text-xs md:text-sm cursor-pointer hover:bg-muted"
+                      onClick={() => sortSales('id')}
+                    >
+                      <div className="flex items-center">
+                        ID Vente
+                        <SortIndicator columnKey="id" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-xs md:text-sm cursor-pointer hover:bg-muted"
+                      onClick={() => sortSales('client')}
+                    >
+                      <div className="flex items-center">
+                        Client
+                        <SortIndicator columnKey="client" />
+                      </div>
+                    </TableHead>
                     <TableHead className="text-xs md:text-sm">Vendeur</TableHead>
-                    <TableHead className="text-right text-xs md:text-sm">Total</TableHead>
-                    <TableHead className="text-right text-xs md:text-sm">Payé</TableHead>
-                    <TableHead className="text-right text-xs md:text-sm">Reste</TableHead>
-                    <TableHead className="text-xs md:text-sm">Date</TableHead>
+                    <TableHead 
+                      className="text-right text-xs md:text-sm cursor-pointer hover:bg-muted"
+                      onClick={() => sortSales('total_amount')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Total
+                        <SortIndicator columnKey="total_amount" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-right text-xs md:text-sm cursor-pointer hover:bg-muted"
+                      onClick={() => sortSales('paid_amount')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Payé
+                        <SortIndicator columnKey="paid_amount" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-right text-xs md:text-sm cursor-pointer hover:bg-muted"
+                      onClick={() => sortSales('remaining_amount')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Reste
+                        <SortIndicator columnKey="remaining_amount" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-xs md:text-sm cursor-pointer hover:bg-muted"
+                      onClick={() => sortSales('sale_date')}
+                    >
+                      <div className="flex items-center">
+                        Date
+                        <SortIndicator columnKey="sale_date" />
+                      </div>
+                    </TableHead>
                     <TableHead className="text-xs md:text-sm">Statut</TableHead>
                     <TableHead className="text-right text-xs md:text-sm">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSales.map((sale) => (
+                  {sales.map((sale) => (
                     <TableRow key={sale.id} className="group hover:bg-muted/50 transition-colors">
                       <TableCell className="font-medium">
                         <div className="font-semibold text-xs md:text-sm">#{sale.id}</div>
@@ -659,7 +896,14 @@ export default function SalesPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <User className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-                          <span className="text-xs md:text-sm">{sale.client?.name || 'Client non spécifié'}</span>
+                          <div>
+                            <span className="text-xs md:text-sm">{sale.client?.name || 'Client non spécifié'}</span>
+                            {sale.client?.phone && (
+                              <div className="text-xs text-muted-foreground">
+                                {sale.client.phone}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -720,7 +964,7 @@ export default function SalesPage() {
               </Table>
             </div>
 
-            {filteredSales.length === 0 && (
+            {sales.length === 0 && (
               <div className="text-center py-8 md:py-12">
                 <ShoppingCart className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground mx-auto mb-3 md:mb-4" />
                 <h3 className="text-base md:text-lg font-semibold text-foreground mb-2">
@@ -754,6 +998,32 @@ export default function SalesPage() {
                 )}
               </div>
             )}
+
+            {/* Load More Button */}
+            {!expanded && visibleSalesCount < allSales.length && sales.length > 0 && (
+              <div className="border-t p-4 text-center">
+                <Button 
+                  variant="outline" 
+                  onClick={loadMoreSales}
+                  className="mx-auto"
+                >
+                  <ChevronDown className="h-4 w-4 mr-2" />
+                  Charger plus ({Math.min(25, allSales.length - visibleSalesCount)} de plus)
+                </Button>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Affichage de {visibleSalesCount} sur {allSales.length} ventes
+                </p>
+              </div>
+            )}
+
+            {/* Show All Info */}
+            {expanded && sales.length > 0 && (
+              <div className="border-t p-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Affichage de toutes les {sales.length} ventes
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -770,7 +1040,7 @@ export default function SalesPage() {
           onOpenChange={setIsEditDialogOpen}
           onSuccess={() => {
             setIsEditDialogOpen(false)
-            fetchSales()
+            fetchAllSales()
           }}
         />
       </div>

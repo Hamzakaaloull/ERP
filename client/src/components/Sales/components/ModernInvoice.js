@@ -1,7 +1,7 @@
 import React from "react"
 
 export function Preview({ sale, payments, formatNumber, statusText, statusClassForText }) {
-  const invoiceNumber = `FAC-${String(sale?.id || "0").padStart(6, "0")}`
+  const invoiceNumber = `BON-${String(sale?.id || "0").padStart(6, "0")}`
   const currentDate = new Date().toLocaleDateString('fr-FR')
   const logoSrc = "/img/Fatini_logo_ligth.png"
   
@@ -132,6 +132,7 @@ export function Preview({ sale, payments, formatNumber, statusText, statusClassF
               <span className="text-gray-600">Payé:</span>
               <span className="font-semibold text-green-600">{formatNumber(sale?.paid_amount || 0)} DH</span>
             </div>
+           
             <div className="flex justify-between border-t border-gray-300 pt-2">
               <span className="text-lg font-bold text-gray-800">Reste à payer:</span>
               <span className="text-lg font-bold text-gray-800">{formatNumber(sale?.remaining_amount || 0)} DH</span>
@@ -153,14 +154,12 @@ export function Preview({ sale, payments, formatNumber, statusText, statusClassF
           
           <div className="text-right">
             <p className="text-gray-600 mb-1">
-              <strong className="text-gray-800">Téléphone:</strong> 0634616342
+              <strong className="text-gray-800">Téléphone:</strong> 0661094474
             </p>
             <p className="text-gray-600 mb-1">
               <strong className="text-gray-800">Email:</strong> ilyassfatini@gmail.com
             </p>
-            <p className="text-gray-600">
-              <strong className="text-gray-800">Site web:</strong> en développement
-            </p>
+            
           </div>
         </div>
       </div>
@@ -481,14 +480,12 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
             
             <div class="contact-info">
               <p style="color: #6b7280; margin: 4px 0;">
-                <strong style="color: #374151;">Téléphone:</strong> 0634616342
+                <strong style="color: #374151;">Téléphone:</strong> 0661094474
               </p>
               <p style="color: #6b7280; margin: 4px 0;">
                 <strong style="color: #374151;">Email:</strong> ilyassfatini@gmail.com
               </p>
-              <p style="color: #6b7280; margin: 4px 0;">
-                <strong style="color: #374151;">Site web:</strong> en développement
-              </p>
+              
             </div>
           </div>
         </div>

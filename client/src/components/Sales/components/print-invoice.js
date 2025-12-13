@@ -32,7 +32,7 @@ export default function PrintInvoice({ sale, onClose }) {
       }
 
       // جلب البيانات الكاملة مع جميع العلاقات
-      const saleUrl = `${API_URL}/api/sales/${sale.documentId}?populate=client&populate=user&populate=sale_items.product&populate=transport&populate=job`
+      const saleUrl = `${API_URL}/api/sales/${sale.id}?populate=client&populate=user&populate=sale_items.product&populate=transport&populate=job`
       
       const saleResponse = await fetch(saleUrl, { 
         headers: token ? { Authorization: `Bearer ${token}` } : {} 
@@ -116,7 +116,7 @@ export default function PrintInvoice({ sale, onClose }) {
         <Card className="p-8">
           <CardContent className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p>جاري تحميل البيانات الكاملة...</p>
+            <p>loading</p>
           </CardContent>
         </Card>
       </div>
@@ -139,7 +139,6 @@ export default function PrintInvoice({ sale, onClose }) {
             </div>
           </div>
 
-          {/* باقي الكود بدون تغيير */}
           <div className="flex gap-2 mb-4 flex-shrink-0">
             <Button
               variant={invoiceType === "traditional" ? "default" : "outline"}
@@ -189,8 +188,8 @@ export default function PrintInvoice({ sale, onClose }) {
                   )
                 ) : (
                   <div className="text-center py-8 text-red-600">
-                    ❌ لا توجد بيانات للعرض
-                  </div>
+                         No data ❌ 
+                    </div>
                 )}
               </div>
             </div>
