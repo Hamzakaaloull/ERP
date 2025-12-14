@@ -454,7 +454,20 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
       }
 
       const saleResult = await saleResponse.json()
-      const saleId = saleResult.data.documentId
+      console.log('Sale creation response:', saleResult) // Debug log
+      
+      // Get sale ID from response - IMPORTANT FIX
+      let saleId
+      if (saleResult.data && saleResult.data.documentId) {
+        // Use documentId if available
+        saleId = saleResult.data.documentId
+      } else if (saleResult.data && saleResult.data.id) {
+        // Fall back to id if documentId not available
+        saleId = saleResult.data.id
+      } else {
+        console.error('No sale ID found in response:', saleResult)
+        throw new Error('Aucun ID de vente trouvé dans la réponse')
+      }
 
       // Créer les items de vente
       for (const item of cart) {
@@ -570,9 +583,10 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
         body: JSON.stringify({ data: historyData })
       })
 
-      // Préparer les données pour l'impression
+      // Préparer les données pour l'impression - FIXED: Include both id and documentId
       const saleForPrint = {
-        id: saleId,
+        id: saleId, // Use the sale ID we got
+        documentId: saleId, // Also set documentId to the same value
         total_amount: grandTotal,
         paid_amount: paid,
         remaining_amount: remaining,

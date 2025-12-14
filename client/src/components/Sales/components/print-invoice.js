@@ -32,7 +32,7 @@ export default function PrintInvoice({ sale, onClose }) {
       }
 
       // جلب البيانات الكاملة مع جميع العلاقات
-      const saleUrl = `${API_URL}/api/sales/${sale.id}?populate=client&populate=user&populate=sale_items.product&populate=transport&populate=job`
+      const saleUrl = `${API_URL}/api/sales/${sale.documentId}?populate=client&populate=user&populate=sale_items.product&populate=transport&populate=job`
       
       const saleResponse = await fetch(saleUrl, { 
         headers: token ? { Authorization: `Bearer ${token}` } : {} 

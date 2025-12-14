@@ -1,4 +1,3 @@
-
 "use client"
 import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
@@ -245,109 +244,109 @@ export default function CreditsPage() {
   }
 
   const confirmMarkAsPaid = async () => {
-  const { item, type } = markAsPaidDialog
-  if (!item) return
+    const { item, type } = markAsPaidDialog
+    if (!item) return
 
-  try {
-    const token = localStorage.getItem('token')
-    
-    if (type === 'credit') {
-      const remainingAmount = item.amount - (item.paid_amount || 0)
+    try {
+      const token = localStorage.getItem('token')
       
-      // Update credit - استخدم item.id للائتمان
-      const updateResponse = await fetch(`${API_URL}/api/credits/${item.documentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          data: {
-            paid_amount: item.amount,
-          
-          }
-        })
-      })
-
-      if (!updateResponse.ok) {
-        throw new Error('Erreur lors de la mise à jour du crédit')
-      }
-
-      // Create payment history
-      if (remainingAmount > 0) {
-        await fetch(`${API_URL}/api/payment-histories`, {
-          method: 'POST',
+      if (type === 'credit') {
+        const remainingAmount = item.amount - (item.paid_amount || 0)
+        
+        // Update credit
+        const updateResponse = await fetch(`${API_URL}/api/credits/${item.id}`, {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             data: {
-              amount: remainingAmount,
-              payment_method: 'cash',
-              payment_date: new Date().toISOString(),
-              note: 'Ce paiement a été effectué automatiquement',
-              credit: item.id
+              paid_amount: item.amount,
+              statut: 'closed'
             }
           })
         })
-      }
 
-    } else if (type === 'sale') {
-      const remainingAmount = item.remaining_amount || 0
-      
-      // Update sale - استخدم item.id للبيع
-      const updateResponse = await fetch(`${API_URL}/api/sales/${item.documentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          data: {
-            paid_amount: item.total_amount,
-            remaining_amount: 0
-          }
-        })
-      })
+        if (!updateResponse.ok) {
+          throw new Error('Erreur lors de la mise à jour du crédit')
+        }
 
-      if (!updateResponse.ok) {
-        throw new Error('Erreur lors de la mise à jour de la vente')
-      }
+        // Create payment history
+        if (remainingAmount > 0) {
+          await fetch(`${API_URL}/api/payment-histories`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              data: {
+                amount: remainingAmount,
+                payment_method: 'cash',
+                payment_date: new Date().toISOString(),
+                note: 'Ce paiement a été effectué automatiquement',
+                credit: item.documentId || item.id
+              }
+            })
+          })
+        }
 
-      // Create payment history
-      if (remainingAmount > 0) {
-        await fetch(`${API_URL}/api/payment-histories`, {
-          method: 'POST',
+      } else if (type === 'sale') {
+        const remainingAmount = item.remaining_amount || 0
+        
+        // Update sale
+        const updateResponse = await fetch(`${API_URL}/api/sales/${item.documentId}`, {
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             data: {
-              amount: remainingAmount,
-             
-              payment_date: new Date().toISOString(),
-              note: 'Ce paiement a été effectué automatiquement',
-              sale: item.documentId
+              paid_amount: item.total_amount,
+              remaining_amount: 0
             }
           })
         })
+
+        if (!updateResponse.ok) {
+          throw new Error('Erreur lors de la mise à jour de la vente')
+        }
+
+        // Create payment history
+        if (remainingAmount > 0) {
+          await fetch(`${API_URL}/api/payment-histories`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              data: {
+                amount: remainingAmount,
+                
+                payment_date: new Date().toISOString(),
+                note: 'Ce paiement a été effectué automatiquement',
+                sale: item.documentId || item.id
+              }
+            })
+          })
+        }
       }
+
+      toast.success('Paiement complet enregistré avec succès!')
+      setMarkAsPaidDialog({ open: false, item: null, type: null })
+      
+      // Refresh data
+      fetchCredits()
+      fetchSales()
+      
+    } catch (error) {
+      console.error('Erreur lors du marquage comme payé:', error)
+      toast.error('Erreur lors du marquage comme payé')
     }
-
-    toast.success('Paiement complet enregistré avec succès!')
-    setMarkAsPaidDialog({ open: false, item: null, type: null })
-    
-    // Refresh data
-    fetchCredits()
-    fetchSales()
-    
-  } catch (error) {
-    console.error('Erreur lors du marquage comme payé:', error)
-    toast.error('Erreur lors du marquage comme payé')
   }
-}
 
   // Filtrer les crédits par date
   const filterDebtsByDate = (debtsList) => {
@@ -376,12 +375,38 @@ export default function CreditsPage() {
     }
   }
 
-  // Regrouper les dettes par client (crédits + ventes impayées)
-  const getClientDebts = () => {
-    const clientDebts = {}
+  // Filtrer les crédits et ventes par terme de recherche
+  const filterDebtsBySearch = (debtsList, type) => {
+    const searchTermLower = searchTerm.toLowerCase().trim()
+    if (!searchTermLower) return debtsList
     
-    // Ajouter les crédits
-    credits.forEach(credit => {
+    return debtsList.filter(debt => {
+      // Pour les crédits
+      if (type === 'credit') {
+        return (
+          debt.id?.toString().toLowerCase().includes(searchTermLower) ||
+          (debt.documentId && debt.documentId.toLowerCase().includes(searchTermLower))
+        )
+      }
+      // Pour les ventes
+      else if (type === 'sale') {
+        return (
+          debt.id?.toString().toLowerCase().includes(searchTermLower) ||
+          (debt.documentId && debt.documentId.toLowerCase().includes(searchTermLower))
+        )
+      }
+      return false
+    })
+  }
+
+  // Regrouper les dettes par client (crédits + ventes impayées) avec filtrage
+  const getFilteredClientDebts = () => {
+    const clientDebts = {}
+    const searchTermLower = searchTerm.toLowerCase().trim()
+    
+    // Ajouter les crédits filtrés
+    const filteredCredits = filterDebtsBySearch(credits, 'credit')
+    filteredCredits.forEach(credit => {
       const client = credit.client
       if (!client) return
       
@@ -396,8 +421,9 @@ export default function CreditsPage() {
       clientDebts[clientId].credits.push(credit)
     })
     
-    // Ajouter les ventes impayées
-    sales.forEach(sale => {
+    // Ajouter les ventes impayées filtrées
+    const filteredSales = filterDebtsBySearch(sales, 'sale')
+    filteredSales.forEach(sale => {
       const client = sale.client
       if (!client) return
       
@@ -415,22 +441,26 @@ export default function CreditsPage() {
     return clientDebts
   }
 
-  // Calculer les totaux par client
+  // Calculer les totaux par client avec filtrage
   const getClientTotals = () => {
-    const clientDebts = getClientDebts()
+    const clientDebts = getFilteredClientDebts()
     
-    return Object.keys(clientDebts).map(clientId => {
+    const totals = Object.keys(clientDebts).map(clientId => {
       const clientData = clientDebts[clientId]
       
-      // Calculer à partir des crédits
-      const creditDebt = clientData.credits.reduce((sum, credit) => sum + credit.amount, 0)
-      const creditPaid = clientData.credits.reduce((sum, credit) => sum + (credit.paid_amount || 0), 0)
+      // Appliquer le filtre de date aux crédits et ventes
+      const filteredCredits = filterDebtsByDate(clientData.credits)
+      const filteredSales = filterDebtsByDate(clientData.sales)
+      
+      // Calculer à partir des crédits filtrés
+      const creditDebt = filteredCredits.reduce((sum, credit) => sum + credit.amount, 0)
+      const creditPaid = filteredCredits.reduce((sum, credit) => sum + (credit.paid_amount || 0), 0)
       const creditRemaining = creditDebt - creditPaid
 
-      // Calculer à partir des ventes
-      const saleDebt = clientData.sales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
-      const salePaid = clientData.sales.reduce((sum, sale) => sum + (sale.paid_amount || 0), 0)
-      const saleRemaining = clientData.sales.reduce((sum, sale) => sum + (sale.remaining_amount || 0), 0)
+      // Calculer à partir des ventes filtrées
+      const saleDebt = filteredSales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0)
+      const salePaid = filteredSales.reduce((sum, sale) => sum + (sale.paid_amount || 0), 0)
+      const saleRemaining = filteredSales.reduce((sum, sale) => sum + (sale.remaining_amount || 0), 0)
 
       // Totaux combinés
       const totalDebt = creditDebt + saleDebt
@@ -442,17 +472,30 @@ export default function CreditsPage() {
         totalDebt,
         totalPaid,
         remainingDebt,
-        credits: clientData.credits,
-        sales: clientData.sales
+        credits: filteredCredits,
+        sales: filteredSales,
+        hasDebts: filteredCredits.length > 0 || filteredSales.length > 0
       }
     })
+    
+    return totals.filter(clientTotal => clientTotal.hasDebts)
   }
 
   // Filtrer les clients
   const filteredClients = getClientTotals().filter(clientTotal => {
-    const matchesSearch = 
-      clientTotal.client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      clientTotal.client.phone?.includes(searchTerm)
+    const searchTermLower = searchTerm.toLowerCase().trim()
+    
+    // Si un terme de recherche est fourni, vérifier si le client a des dettes après filtrage
+    if (searchTermLower) {
+      const clientMatchesSearch = 
+        clientTotal.client.name?.toLowerCase().includes(searchTermLower) ||
+        clientTotal.client.phone?.includes(searchTerm)
+      
+      // Si le client ne correspond pas au terme de recherche ET n'a pas de dettes filtrées, exclure
+      if (!clientMatchesSearch && clientTotal.credits.length === 0 && clientTotal.sales.length === 0) {
+        return false
+      }
+    }
 
     const remaining = clientTotal.remainingDebt
     
@@ -460,12 +503,7 @@ export default function CreditsPage() {
       (statusFilter === 'active' && remaining > 0) ||
       (statusFilter === 'closed' && remaining <= 0)
 
-    // Appliquer le filtre de date sur les dettes du client
-    const filteredCredits = filterDebtsByDate(clientTotal.credits)
-    const filteredSales = filterDebtsByDate(clientTotal.sales)
-    const hasDebtsAfterDateFilter = filteredCredits.length > 0 || filteredSales.length > 0
-
-    return matchesSearch && matchesStatus && (dateFilter === 'all' || hasDebtsAfterDateFilter)
+    return matchesStatus
   })
 
   const handleExportToPDF = () => {
@@ -610,7 +648,7 @@ export default function CreditsPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher client..."
+                  placeholder="Rechercher client, téléphone, ID vente, ID crédit..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 bg-background text-sm md:text-base"
@@ -743,6 +781,11 @@ export default function CreditsPage() {
                                 <div className="font-medium flex items-center gap-2">
                                   <CreditCard className="h-4 w-4" />
                                   Crédit Direct #{credit.id}
+                                  {credit.documentId && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      ({credit.documentId})
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {credit.due_date ? `Échéance: ${new Date(credit.due_date).toLocaleDateString('fr-FR')}` : 'Pas de date d\'échéance'}
@@ -806,6 +849,11 @@ export default function CreditsPage() {
                                 <div className="font-medium flex items-center gap-2">
                                   <ShoppingCart className="h-4 w-4" />
                                   Vente #{sale.id}
+                                  {sale.documentId && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      ({sale.documentId})
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {sale.sale_date ? `Date: ${new Date(sale.sale_date).toLocaleDateString('fr-FR')}` : 'Pas de date'}

@@ -293,14 +293,14 @@ export function AppSidebar(props) {
       onClick: () => setActiveComponent("TableauDeBord")
     },
     { 
-      title: "Sales", 
+      title: "Ventes", 
       url: "#", 
       icon: Weight, 
       isActive: activeComponent === "Sales",
       onClick: () => setActiveComponent("Sales")
     },
     { 
-      title: "Debts", 
+      title: "Dettes", 
       url: "#", 
       icon: BanknoteArrowUp, 
       isActive: activeComponent === "Debts",
@@ -314,7 +314,7 @@ export function AppSidebar(props) {
       onClick: () => setActiveComponent("Stock_Mouvements")
     },
     { 
-      title: "Products et Categories", 
+      title: "Produits et Categories", 
       url: "#", 
       icon: NotepadText, 
       isActive: activeComponent === "References",

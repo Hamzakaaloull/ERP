@@ -1,7 +1,7 @@
 import React from "react"
 
 export function Preview({ sale, payments, formatNumber, statusText, statusClassForText }) {
-  const invoiceNumber = `BON-${String(sale?.id || "0").padStart(6, "0")}`
+const invoiceNumber = `FAC-${String(sale?.documentId || "0").padStart(6, "0")}`
   const currentDate = new Date().toLocaleDateString('fr-FR')
   const logoSrc = "/img/Fatini_logo_ligth.png"
   
@@ -178,7 +178,7 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
       .replace(/'/g, "&#039;")
   }
 
-  const invoiceNumber = `FAC-${String(sale?.id || "0").padStart(6, "0")}`
+const invoiceNumber = `BON-${String(sale?.documentId || sale?.id || "0").padStart(6, "0")}`
   const currentDate = new Date().toLocaleDateString('fr-FR')
   const saleDate = sale?.sale_date ? new Date(sale.sale_date).toLocaleDateString('fr-FR') : currentDate
   const logoSrc = typeof window !== "undefined" ? `${window.location.origin}/img/Fatini_logo_ligth.png` : `/img/Fatini_logo_ligth.png`

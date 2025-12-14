@@ -180,7 +180,7 @@ export default function SaleDetailsDialog({ sale, open, onOpenChange }) {
       case 'transfer':
         return 'Virement'
       default:
-        return method || 'Non spécifié'
+        return method || 'Espèces'
     }
   }
 

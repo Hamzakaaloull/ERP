@@ -1,8 +1,7 @@
 import React from "react"
 
 export function Preview({ sale, payments, formatNumber, statusText, statusClassForText }) {
-  const ticketCode = `TKT-${String(sale?.id || "0").padStart(4, "0")}`
-  
+const ticketCode = `Bon-${String(sale?.documentId || sale?.id || "0").padStart(4, "0")}`  
   return (
     <div className="dark:text-black" style={{ 
       width: "100mm", 
@@ -30,39 +29,7 @@ export function Preview({ sale, payments, formatNumber, statusText, statusClassF
           justifyContent: "center",
           alignItems: "center"
         }}>
-          <img 
-            src="/img/Fatini_logo_ligth.png" 
-            alt="FATINI" 
-            style={{ 
-              width: "85px",
-              height: "auto",
-              border: "2px solid #000",
-              backgroundColor: "white",
-              borderRadius: "4px"
-            }} 
-            onError={(e) => {
-              e.target.style.display = 'none';
-              e.target.parentNode.innerHTML = `
-                <div style="
-                  width: 85px; 
-                  height: 55px; 
-                  background: #000;
-                  color: white;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-weight: 900;
-                  font-size: 18px;
-                  border-radius: 4px;
-                  border: 2px solid #000;
-                  text-transform: uppercase;
-                  letter-spacing: 1px;
-                ">
-                  FATINI
-                </div>
-              `;
-            }}
-          />
+         
         </div>
         
         {/* Company Info - Centered below logo */}
@@ -349,6 +316,69 @@ export function Preview({ sale, payments, formatNumber, statusText, statusClassF
         </div>
       </div>
 
+      {/* Historique des paiements */}
+      {payments && payments.length > 0 && (
+        <div style={{ 
+          marginTop: "12px", 
+          marginBottom: "12px",
+          padding: "10px",
+          backgroundColor: "#f8f8f8",
+          border: "1px solid #ddd",
+          borderRadius: "4px"
+        }}>
+          <div style={{ 
+            fontWeight: "bold", 
+            fontSize: "12pt", 
+            marginBottom: "8px",
+            borderBottom: "1px solid #000",
+            paddingBottom: "4px"
+          }}>
+            📋 HISTORIQUE DES PAIEMENTS
+          </div>
+          {payments.map((payment, index) => (
+            <div key={index} style={{ 
+              display: "flex", 
+              justifyContent: "space-between",
+              fontSize: "10pt",
+              marginBottom: "6px",
+              paddingBottom: "4px",
+              borderBottom: index === payments.length - 1 ? "none" : "1px dotted #ccc"
+            }}>
+              <div>
+                <div style={{ fontWeight: "600" }}>
+                  {new Date(payment.payment_date).toLocaleDateString('fr-FR')}
+                </div>
+                <div style={{ fontSize: "9pt", color: "#000000ff", marginTop: "2px" }}>
+                  {payment.payment_method || 'Espèces'}
+                  {payment.note && ` - ${payment.note}`}
+                </div>
+              </div>
+              <span style={{ 
+                fontWeight: "800", 
+                color: "#059669",
+                fontSize: "11pt"
+              }}>
+                {formatNumber(payment.amount)} DH
+              </span>
+            </div>
+          ))}
+          <div style={{ 
+            display: "flex", 
+            justifyContent: "space-between",
+            marginTop: "8px",
+            paddingTop: "8px",
+            borderTop: "2px solid #000",
+            fontWeight: "bold",
+            fontSize: "11pt"
+          }}>
+            <span>TOTAL PAYÉ:</span>
+            <span style={{ color: "#059669" }}>
+              {formatNumber(payments.reduce((sum, p) => sum + (p.amount || 0), 0))} DH
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Status - Simple design */}
       <div style={{ 
         textAlign: "center", 
@@ -434,7 +464,6 @@ export function Preview({ sale, payments, formatNumber, statusText, statusClassF
         <div style={{ 
           fontWeight: "700",
           marginBottom: "6px",
-
           color: "#000",
           fontStyle: "italic",
           fontSize: "12pt"
@@ -463,7 +492,7 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
   }
 
   const statusText = getStatusText(sale)
-  const ticketCode = `TKT-${String(sale?.id || "0").padStart(4, "0")}`
+  const ticketCode = `TKT-${String(sale?.documentId || "0").padStart(4, "0")}`
   const dateText = sale?.sale_date ? new Date(sale.sale_date).toLocaleString("fr-FR") : new Date().toLocaleString("fr-FR")
   
   // Status icon
@@ -487,6 +516,28 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
         <div style="width: 20%; text-align: center; font-weight: 700; padding-right: 8px;">${tot}</div>
       </div>`
   }).join("")
+
+  // Historique des paiements HTML
+  const paymentsHtml = payments && payments.length > 0 ? `
+    <div style="margin-top: 12px; margin-bottom: 12px; padding: 10px; background-color: #f8f8f8; border: 1px solid #ddd; border-radius: 4px;">
+      <div style="font-weight: bold; font-size: 12pt; margin-bottom: 8px; border-bottom: 1px solid #000; padding-bottom: 4px;">
+        📋 HISTORIQUE DES PAIEMENTS
+      </div>
+      ${payments.map(payment => `
+        <div style="display: flex; justify-content: space-between; font-size: 10pt; margin-bottom: 6px; padding-bottom: 4px; border-bottom: ${payments.indexOf(payment) === payments.length - 1 ? 'none' : '1px dotted #ccc'};">
+          <div>
+            <div style="font-weight: 600;">${new Date(payment.payment_date).toLocaleDateString('fr-FR')}</div>
+            <div style="font-size: 9pt; color: #000000ff; margin-top: 2px;">${escapeHtml(payment.payment_method || 'Espèces')}${payment.note ? ` - ${escapeHtml(payment.note)}` : ''}</div>
+          </div>
+          <span style="font-weight: 800; color: #000000ff; font-size: 11pt;">${escapeHtml(formatNumber(payment.amount))} DH</span>
+        </div>
+      `).join('')}
+      <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 2px solid #000; font-weight: bold; font-size: 11pt;">
+        <span>TOTAL PAYÉ:</span>
+        <span style="color: #000000ff;">${escapeHtml(formatNumber(payments.reduce((sum, p) => sum + (p.amount || 0), 0)))} DH</span>
+      </div>
+    </div>
+  ` : ''
 
   return `
     <!doctype html>
@@ -685,7 +736,8 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
     <body class="print-optimized">
       <!-- HEADER - Logo centered with company info -->
       <div class="header-section no-break">
-     
+        <!-- Logo Centered at Top -->
+        
         
         <!-- Company Info - Centered below logo -->
         <div style="text-align: center; margin-top: 4px;">
@@ -769,6 +821,9 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
         </div>
       </div>
       
+      <!-- HISTORIQUE DES PAIEMENTS -->
+      ${paymentsHtml}
+      
       <!-- STATUT -->
       <div class="status-box no-break" style="background-color: #f8f8f8;">
         <div style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16pt;">
@@ -778,7 +833,7 @@ export function buildPrintHTML(sale, payments, formatNumber, getStatusText, stat
           STATUT: ${escapeHtml(statusText)}
         </div>
         ${sale?.reference ? `
-          <div style="font-size: 10pt; margin-top: 5px; font-weight: 600; color: #666; font-family: 'Courier New', monospace;">REF: ${escapeHtml(sale.reference)}</div>
+          <div style="font-size: 10pt; margin-top: 5px; font-weight: 600; color: #000000ff; font-family: 'Courier New', monospace;">REF: ${escapeHtml(sale.reference)}</div>
         ` : ''}
       </div>
       

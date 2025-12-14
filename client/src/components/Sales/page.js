@@ -97,11 +97,12 @@ export default function SalesPage() {
       }
       
       const countData = await countResponse.json()
+      console.log('Données de comptage des ventes:', countData)
       const total = countData.meta?.pagination?.total || 100
       
-      // Fetch all sales in one request (adjust pageSize to a high number)
+      // Fetch all sales with their real IDs
       const response = await fetch(
-        `${API_URL}/api/sales?pagination[pageSize]=${total}&populate=client&populate=user&populate=sale_items.product&sort=sale_date:desc`,
+        `${API_URL}/api/sales?pagination[pageSize]=${total}&populate=client&populate=user&populate=sale_items.product&sort=id:desc`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -116,11 +117,9 @@ export default function SalesPage() {
       const data = await response.json()
       
       if (data && data.data) {
-        // Sort by sale_date descending by default
+        // Sort by ID descending by default
         const sortedData = [...data.data].sort((a, b) => {
-          const dateA = new Date(a.sale_date || 0)
-          const dateB = new Date(b.sale_date || 0)
-          return dateB - dateA // Descending
+          return b.id - a.id // Descending by real ID
         })
         
         setAllSales(sortedData) // Store all sales
@@ -158,6 +157,10 @@ export default function SalesPage() {
         case 'id':
           aValue = a.id
           bValue = b.id
+          break
+        case 'documentId':
+          aValue = a.documentId || ''
+          bValue = b.documentId || ''
           break
         case 'client':
           aValue = a.client?.name || ''
@@ -203,14 +206,53 @@ export default function SalesPage() {
 
   // Function to check if sale matches all filters
   const matchesFilters = (sale) => {
-    const searchTermStr = searchTerm.toString().toLowerCase().trim()
+    const searchTermStr = searchTerm.trim()
     
+    // If search term is empty, return true for search match
+    if (!searchTermStr) {
+      // Check other filters only
+      const remaining = sale.remaining_amount || 0
+      const paid = sale.paid_amount || 0
+      
+      const matchesStatus = statusFilter === 'all' || 
+        (statusFilter === 'paid' && remaining === 0 && paid > 0) ||
+        (statusFilter === 'partial' && paid > 0 && remaining > 0) ||
+        (statusFilter === 'unpaid' && paid === 0)
+
+      const matchesClient = clientFilter === 'all' || sale.client?.id?.toString() === clientFilter
+
+      // Filtre par date
+      let matchesDate = true
+      if (dateFrom || dateTo) {
+        const saleDate = sale.sale_date ? new Date(sale.sale_date) : null
+        
+        if (dateFrom && saleDate) {
+          const fromDate = new Date(dateFrom)
+          fromDate.setHours(0, 0, 0, 0)
+          if (saleDate < fromDate) {
+            matchesDate = false
+          }
+        }
+        
+        if (dateTo && saleDate) {
+          const toDate = new Date(dateTo)
+          toDate.setHours(23, 59, 59, 999)
+          if (saleDate > toDate) {
+            matchesDate = false
+          }
+        }
+      }
+
+      return matchesStatus && matchesClient && matchesDate
+    }
+    
+    // Case-insensitive search by real ID, documentId, and other fields
     const matchesSearch = 
-      sale.id?.toString().toLowerCase().includes(searchTermStr) ||
-      sale.client?.name?.toLowerCase().includes(searchTermStr) ||
-      sale.user?.username?.toLowerCase().includes(searchTermStr) ||
-      sale.client?.phone?.toLowerCase().includes(searchTermStr) ||
-      sale.client?.email?.toLowerCase().includes(searchTermStr)
+      sale.id?.toString().toLowerCase().includes(searchTermStr.toLowerCase()) ||
+      (sale.documentId && sale.documentId.toLowerCase().includes(searchTermStr.toLowerCase())) ||
+      (sale.client?.name && sale.client.name.toLowerCase().includes(searchTermStr.toLowerCase())) ||
+      (sale.user?.username && sale.user.username.toLowerCase().includes(searchTermStr.toLowerCase())) ||
+      (sale.client?.email && sale.client.email.toLowerCase().includes(searchTermStr.toLowerCase()))
 
     const remaining = sale.remaining_amount || 0
     const paid = sale.paid_amount || 0
@@ -330,6 +372,7 @@ export default function SalesPage() {
       // Préparer les données du tableau
       const tableData = allSales.map(sale => [
         `#${sale.id}`,
+        sale.documentId || 'N/A', // Include documentId in export
         sale.client?.name || 'N/A',
         sale.user?.username || 'N/A',
         `${(sale.total_amount || 0).toFixed(2)} DH`,
@@ -342,6 +385,7 @@ export default function SalesPage() {
       // En-têtes du tableau
       const headers = [
         'ID Vente',
+        'Document ID', // Add documentId header
         'Client',
         'Vendeur',
         'Total',
@@ -406,6 +450,7 @@ export default function SalesPage() {
       // En-têtes CSV
       const headers = [
         'ID Vente',
+        'Document ID', // Add documentId header
         'Client',
         'Téléphone Client',
         'Vendeur',
@@ -420,6 +465,7 @@ export default function SalesPage() {
       // Données CSV
       const csvData = allSales.map(sale => [
         sale.id,
+        sale.documentId || 'N/A', // Include documentId in CSV
         sale.client?.name || 'N/A',
         sale.client?.phone || 'N/A',
         sale.user?.username || 'N/A',
@@ -684,7 +730,7 @@ export default function SalesPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher par ID, client, téléphone..."
+                  placeholder="Rechercher par ID, documentId, client, email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 bg-background text-sm md:text-base"
@@ -836,6 +882,15 @@ export default function SalesPage() {
                     </TableHead>
                     <TableHead 
                       className="text-xs md:text-sm cursor-pointer hover:bg-muted"
+                      onClick={() => sortSales('documentId')}
+                    >
+                      <div className="flex items-center">
+                        Document ID
+                        <SortIndicator columnKey="documentId" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-xs md:text-sm cursor-pointer hover:bg-muted"
                       onClick={() => sortSales('client')}
                     >
                       <div className="flex items-center">
@@ -891,6 +946,11 @@ export default function SalesPage() {
                         <div className="font-semibold text-xs md:text-sm">#{sale.id}</div>
                         <div className="text-xs text-muted-foreground">
                           {sale.sale_items?.length || 0} article(s)
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs md:text-sm font-mono">
+                          {sale.documentId || '-'}
                         </div>
                       </TableCell>
                       <TableCell>
