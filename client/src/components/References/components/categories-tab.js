@@ -160,7 +160,7 @@ export default function CategoriesTab() {
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={handleAdd} className="w-full lg:w-auto dark:text-white">
+            <Button onClick={handleAdd} className="w-full lg:w-auto text-white dark:text-black">
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle catégorie
             </Button>

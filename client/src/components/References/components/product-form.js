@@ -415,7 +415,7 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
                           type="number"
                           min="0"
                           value={productData.stock_quantity}
-                          onChange={(e) => updateProduct(index, 'stock_quantity', parseInt(e.target.value) || 0)}
+                          onChange={(e) => updateProduct(index, 'stock_quantity', parseInt(e.target.value))}
                           placeholder="0"
                           className="bg-background"
                         />
@@ -507,8 +507,8 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
 
             {!product && (
               <div className="flex justify-center">
-                <Button type="button" onClick={addProductRow} variant="outline" className="w-full max-w-md">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button type="button" onClick={addProductRow} variant="outline" className="w-full max-w-md text-black dark:text-white">
+                  <Plus className="h-4 w-4 mr-2 " />
                   Ajouter un autre produit
                 </Button>
               </div>
@@ -522,7 +522,7 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
         <div className="text-sm text-muted-foreground">
           {products.length} produit(s) à créer
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 text-black dark:text-white">
           <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
             Annuler
           </Button>

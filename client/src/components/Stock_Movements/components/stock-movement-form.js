@@ -888,7 +888,7 @@ export default function StockMovementForm({ movement, products, onSuccess, onCan
         </div>
 
         <div className="overflow-auto flex-shrink-0 w-full flex flex-col-reverse sm:flex-row sm:justify-end items-center gap-3 p-6 border-t mb-10">
-          <Button className="text-black" type="button" variant="outline" onClick={onCancel} disabled={loading || showSuccessAnimation}>
+          <Button className="text-black dark:text-white" type="button" variant="outline" onClick={onCancel} disabled={loading || showSuccessAnimation}>
             Annuler
           </Button>
           <Button

@@ -841,7 +841,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
                           min="1"
                           max={selectedProduct.stock_quantity}
                           value={quantity}
-                          onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                          onChange={(e) => setQuantity(parseInt(e.target.value))}
                           className="bg-background"
                         />
                       </div>
@@ -1181,7 +1181,7 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
                             id="transportPrice"
                             type="number"
                             min="0"
-                            step="0.01"
+                            
                             value={transportPrice}
                             onChange={(e) => setTransportPrice(e.target.value)}
                             className="bg-background text-sm"
