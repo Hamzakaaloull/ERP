@@ -251,8 +251,8 @@ export default function ProductsTab({ onUpdate }) {
           </Select>
         </div>
 
-        <div className="flex gap-2 w-full lg:w-auto">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <div className="flex gap-2 w-3xs lg:w-auto">
+          <Dialog  open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={handleAdd} className="flex-1 lg:flex-none">
                 <Plus className="h-4 w-4 mr-2" />

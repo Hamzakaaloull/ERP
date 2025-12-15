@@ -255,7 +255,7 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col h-full">
+    <form onSubmit={handleSubmit} className="flex  flex-col h-full w-full overflow-auto ">
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full pr-4">
           <div className="space-y-6 pb-4">
@@ -284,7 +284,7 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Section Général */}
-                  <div className="space-y-4">
+                  <div className="space-y-4 ">
                     <div className="flex items-center gap-2 pb-2 border-b">
                       <Package className="h-4 w-4 text-primary" />
                       <h3 className="font-semibold">Informations générales</h3>
@@ -301,12 +301,12 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
                           onChange={(e) => updateProduct(index, 'name', e.target.value)}
                           placeholder="Ex: Ciment 25kg"
                           required
-                          className="bg-background"
+                          className="bg-background "
                         />
                       </div>
 
-                      <div className="space-y-3">
-                        <Label htmlFor={`category-${index}`} className="flex items-center gap-2">
+                      <div className="space-y-3" >
+                        <Label htmlFor={`category-${index}`} className="flex items-center gap-2  mr-8" style={{ marginRight: '45px' }}>
                           <FolderOpen className="h-4 w-4" />
                           Catégorie
                         </Label>
@@ -314,8 +314,8 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
                           value={productData.category} 
                           onValueChange={(value) => updateProduct(index, 'category', value)}
                         >
-                          <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Sélectionner une catégorie" />
+                          <SelectTrigger className="bg-background mr-4">
+                            <SelectValue placeholder="Sélectionner une catégorie"  />
                           </SelectTrigger>
                           <SelectContent>
                             {Array.isArray(categories) && categories.map(category => (
@@ -336,7 +336,8 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
                           value={productData.unit}
                           onChange={(e) => updateProduct(index, 'unit', e.target.value)}
                           placeholder="Ex: Sac, Pièce, Mètre, Kg..."
-                          className="bg-background"
+                          className="bg-background [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                         />
                         <p className="text-sm text-muted-foreground">
                           Spécifiez l'unité de mesure pour ce produit
@@ -380,7 +381,8 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
                             onChange={(e) => updateProduct(index, 'price', e.target.value)}
                             placeholder="0.00"
                             required
-                            className="pl-10 bg-background"
+                            className="pl-10 bg-background [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
                         <p className="text-sm text-muted-foreground">
@@ -400,7 +402,8 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
                             value={productData.price_achat}
                             onChange={(e) => updateProduct(index, 'price_achat', e.target.value)}
                             placeholder="0.00"
-                            className="pl-10 bg-background"
+                            className="pl-10 bg-background [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
                         <p className="text-sm text-muted-foreground">
@@ -417,7 +420,8 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
                           value={productData.stock_quantity}
                           onChange={(e) => updateProduct(index, 'stock_quantity', parseInt(e.target.value))}
                           placeholder="0"
-                          className="bg-background"
+                          className="bg-background [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                         />
                         <div className="flex items-center gap-2 text-sm">
                           <Badge 
@@ -469,7 +473,8 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
                               type="file"
                               accept="image/*"
                               onChange={(e) => handlePhotoChange(index, e)}
-                              className="hidden"
+                              className="hidden [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </Label>
                         </div>
@@ -494,7 +499,8 @@ export default function ProductForm({ product, categories, onSuccess, onCancel }
                               type="file"
                               accept="image/*"
                               onChange={(e) => handlePhotoChange(index, e)}
-                              className="hidden"
+                              className="hidden [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                             />
                           </Label>
                         </div>

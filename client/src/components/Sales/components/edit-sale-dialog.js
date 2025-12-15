@@ -89,8 +89,8 @@ export default function EditSaleDialog({ sale, open, onOpenChange, onSuccess }) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-2xl flex items-center gap-2">
-            <Edit className="h-6 w-6" />
+          <DialogTitle className="text-2xl flex items-center gap-2 text-black  font-semibold dark:text-blue-100">
+            <Edit className="h-6 w-6 " />
             Modifier la Vente #{sale.id}
           </DialogTitle>
           <DialogDescription>
@@ -140,7 +140,8 @@ export default function EditSaleDialog({ sale, open, onOpenChange, onSuccess }) 
                     type="date"
                     value={formData.sale_date}
                     onChange={(e) => setFormData({ ...formData, sale_date: e.target.value })}
-                    className="bg-background"
+                    className="bg-background  [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </CardContent>
@@ -165,7 +166,8 @@ export default function EditSaleDialog({ sale, open, onOpenChange, onSuccess }) 
                       min="0"
                       value={formData.total_amount}
                       onChange={(e) => setFormData({ ...formData, total_amount: e.target.value })}
-                      className="bg-background"
+                      className="bg-background  [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                   <div className="space-y-2">
@@ -177,7 +179,8 @@ export default function EditSaleDialog({ sale, open, onOpenChange, onSuccess }) 
                       min="0"
                       value={formData.paid_amount}
                       onChange={(e) => setFormData({ ...formData, paid_amount: e.target.value })}
-                      className="bg-background"
+                      className="bg-background  [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                   <div className="space-y-2">
@@ -197,9 +200,9 @@ export default function EditSaleDialog({ sale, open, onOpenChange, onSuccess }) 
             </Card>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t">
+          <div className="flex justify-end text-black dark:text-white gap-3 pt-6 border-t">
             <Button 
-              type="button" 
+              type="button text-black dark:text-white" 
               variant="outline" 
               onClick={() => onOpenChange(false)}
               disabled={loading}

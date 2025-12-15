@@ -17,19 +17,25 @@ import { motion, AnimatePresence } from 'motion/react';
 // Load Particles only on the client and lazily to avoid impacting LCP/SSR
 const Particles = dynamic(() => import('./Particles'), {
   ssr: false,
-  loading: () => <div aria-hidden />,
+  loading: () => (
+    <div className="flex items-center justify-center h-full w-full">
+      <div className="flex flex-col items-center gap-4">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="h-12 w-12 rounded-full border-4 border-gray-300 border-t-gray-700 dark:border-gray-700 dark:border-t-gray-300"
+        />
+        <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
+      </div>
+    </div>
+  ),
 });
 
 // Lazy load Lottie
-const DotLottieReact = lazy(() =>
+export const DotLottieReact = lazy(() =>
   import("@lottiefiles/dotlottie-react").then((mod) => {
     return { default: mod?.default ?? mod?.DotLottieReact ?? mod };
   })
-);
-
-// Composant de chargement simple pour Lottie
-const LottieFallback = () => (
-  <div className="h-24 w-24 bg-gray-200 animate-pulse rounded-lg mx-auto"></div>
 );
 
 export default function LoginPage() {
@@ -41,6 +47,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [theme, setTheme] = useState("light");
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const usernameRef = useRef(null);
   const API = process.env.NEXT_PUBLIC_STRAPI_API_URL;
 
@@ -93,6 +101,18 @@ export default function LoginPage() {
     return () => clearTimeout(timer);
   }, [isCheckingAuth]);
 
+  // Effet pour rediriger après l'animation de bienvenue
+  useEffect(() => {
+    if (showWelcomeAnimation && userRole === "admin") {
+      // L'animation dure environ 4 secondes (delay) + temps d'animation
+      const timer = setTimeout(() => {
+        router.push("/dashboard");
+      }, 6000); // 6 secondes pour être sûr que l'animation est terminée
+
+      return () => clearTimeout(timer);
+    }
+  }, [showWelcomeAnimation, userRole, router]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -135,6 +155,7 @@ export default function LoginPage() {
       }
 
       const roleName = userData.role?.name;
+      setUserRole(roleName);
       
       // Mettre à jour l'état isActive de l'utilisateur à true
       const updateRes = await fetch(`${API}/api/users/${userData.id}`, {
@@ -165,15 +186,13 @@ export default function LoginPage() {
         { title: "Spécialités", isActive: false }
       ]));
 
-      // Redirection basée sur le rôle
-      setTimeout(() => {
-        if (roleName === "admin") {
-          router.push("/dashboard");
-        } else {
-          setError("Accès non autorisé");
-          router.push("/");
-        }
-      }, 0);
+      // Vérifier le rôle et afficher l'animation de bienvenue
+      if (roleName === "admin") {
+        setShowWelcomeAnimation(true);
+      } else {
+        setError("Accès non autorisé");
+        setLoading(false);
+      }
       
     } catch (err) {
       setError("Erreur de connexion au serveur.");
@@ -199,14 +218,56 @@ export default function LoginPage() {
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
-        <div className="flex flex-col items-center gap-4">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="h-12 w-12 rounded-full border-4 border-gray-300 border-t-gray-700 dark:border-gray-700 dark:border-t-gray-300"
+        <Suspense fallback={
+          <div className="flex flex-col items-center gap-4">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="h-12 w-12 rounded-full border-4 border-gray-300 border-t-gray-700 dark:border-gray-700 dark:border-t-gray-300"
+            />
+            <p className="text-gray-600 dark:text-gray-400">Chargement...</p>
+          </div>
+        }>
+          <DotLottieReact
+            src="https://lottie.host/9ac5cf07-7737-4e9c-9b96-449cb8cec538/cXC1yioKGJ.lottie"
+            loop
+            autoplay
+            delay={4000}
+            speed={2}
+            height={10}
           />
-          <p className="text-gray-600 dark:text-gray-400">Vérification de l'authentification...</p>
-        </div>
+        </Suspense>
+      </div>
+    );
+  }
+
+  // Afficher l'animation de bienvenue après connexion réussie
+  if (showWelcomeAnimation) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
+        <Suspense fallback={
+          <div className="flex flex-col items-center gap-4">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="h-12 w-12 rounded-full border-4 border-gray-300 border-t-gray-700 dark:border-gray-700 dark:border-t-gray-300"
+            />
+            <p className="text-gray-600 dark:text-gray-400">Chargement de l'animation...</p>
+          </div>
+        }>
+          <div className="flex flex-col items-center gap-6">
+            <DotLottieReact
+              src="https://lottie.host/9ac5cf07-7737-4e9c-9b96-449cb8cec538/cXC1yioKGJ.lottie"
+              loop={false}
+              autoplay
+              delay={4000}
+              speed={2}
+              height={200}
+            />
+            
+           
+          </div>
+        </Suspense>
       </div>
     );
   }
@@ -230,7 +291,7 @@ export default function LoginPage() {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
+        transition={{ duration: 2 }}
         className="relative min-h-screen flex items-center justify-center p-4 transition-all duration-500 ease-out z-10"
       >
         {/* Bouton de changement de thème */}
@@ -293,14 +354,15 @@ export default function LoginPage() {
                   rotate: [0, -2, 2, -2, 0],
                   transition: { duration: 0.5 }
                 }}
-                className="flex justify-center item-center"
+                className="flex justify-center items-center mb-4"
               >
                 <Image
                   src="/img/Fatini_logo_dark2.png"
                   alt="fatini Logo"
                   width={150}
                   height={50}
-                  className="object-contain light:invert dark:invert-0"
+                  className={`object-contain ${theme === 'light' ? 'invert' : ''}`}
+                  priority
                 />
               </motion.div>
                        
@@ -493,4 +555,4 @@ export default function LoginPage() {
       </motion.div>
     </div>
   );
-}
+} 

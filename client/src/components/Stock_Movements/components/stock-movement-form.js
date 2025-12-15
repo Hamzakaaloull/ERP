@@ -593,7 +593,8 @@ export default function StockMovementForm({ movement, products, onSuccess, onCan
                         onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                         placeholder="0"
                         required
-                        className="bg-background"
+                        className="bg-background   [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </CardContent>
@@ -726,7 +727,8 @@ export default function StockMovementForm({ movement, products, onSuccess, onCan
                             value={currentQuantity}
                             onChange={(e) => setCurrentQuantity(e.target.value)}
                             placeholder="0"
-                            className="bg-background flex-1"
+                            className="bg-background flex-1  [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <Button
                             type="button"

@@ -560,11 +560,11 @@ export default function SalesPage() {
     const paid = sale.paid_amount || 0
     
     if (remaining === 0 && paid > 0) {
-      return <Badge variant="default">Payée</Badge>
+      return <Badge variant="ghost">Payée</Badge>
     } else if (paid > 0 && remaining > 0) {
-      return <Badge variant="secondary">Partiellement payée</Badge>
+      return <Badge variant="default">Partiellement payée</Badge>
     } else {
-      return <Badge variant="destructive">Impayée</Badge>
+      return <Badge variant="destructive" className="text-white">Impayée</Badge>
     }
   }
 
@@ -693,7 +693,7 @@ export default function SalesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs md:text-sm font-medium">En Attente</CardTitle>
-              <Badge variant="destructive" className="text-xs">DH</Badge>
+              <Badge variant="text-muted-foreground text-xs" className="text-xs">DH</Badge>
             </CardHeader>
             <CardContent>
               <div className="text-xl md:text-2xl font-bold text-destructive">
@@ -746,7 +746,7 @@ export default function SalesPage() {
                   <SelectItem value="all" className="text-sm md:text-base">Tous les statuts</SelectItem>
                   <SelectItem value="paid" className="text-sm md:text-base">Payée</SelectItem>
                   <SelectItem value="partial" className="text-sm md:text-base">Partiellement payée</SelectItem>
-                  <SelectItem value="unpaid" className="text-sm md:text-base">Impayée</SelectItem>
+                  <SelectItem value="unpaid" className="text-sm md:text-base ">Impayée</SelectItem>
                 </SelectContent>
               </Select>
 

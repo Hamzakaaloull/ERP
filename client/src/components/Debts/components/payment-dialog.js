@@ -223,7 +223,7 @@ export default function PaymentDialog({ credit, open, onOpenChange, onSuccess })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md w-full max-h-[90vh] overflow-y-auto dark:bg-gray-900 dark:text-white">
+      <DialogContent className="max-w-md bg-gray-800 w-full max-h-[90vh] overflow-y-auto  dark:text-white">
         <DialogHeader>
           <DialogTitle className="text-xl flex items-center gap-2 dark:text-white">
             <HandCoins className="h-5 w-5" />
@@ -239,7 +239,7 @@ export default function PaymentDialog({ credit, open, onOpenChange, onSuccess })
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Informations de la Dette */}
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
+          <Card className=" bg-gray-200 dark:border-gray-700">
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -295,7 +295,7 @@ export default function PaymentDialog({ credit, open, onOpenChange, onSuccess })
                 max={remainingAmount}
                 value={paymentData.amount}
                 onChange={(e) => handleInputChange('amount', e.target.value)}
-                className="bg-background text-sm md:text-base h-10 md:h-12 dark:bg-gray-800 dark:text-white dark:border-gray-700"
+                className="bg-background text-sm md:text-base h-10 md:h-12  dark:text-white dark:border-gray-700  [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 placeholder="0.00"
                 required
               />
@@ -310,10 +310,10 @@ export default function PaymentDialog({ credit, open, onOpenChange, onSuccess })
                 value={paymentData.payment_method} 
                 onValueChange={(value) => handleInputChange('payment_method', value)}
               >
-                <SelectTrigger className="bg-background h-10 md:h-12 text-sm md:text-base dark:bg-gray-800 dark:text-white dark:border-gray-700">
+                <SelectTrigger className="bg-background h-10 md:h-12 text-sm md:text-base gray dark:text-white dark:border-gray-700">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="dark:bg-gray-800 dark:text-white">
+                <SelectContent className="gray dark:text-white">
                   <SelectItem value="cash" className="text-sm md:text-base dark:hover:bg-gray-700">Espèces</SelectItem>
                   <SelectItem value="card" className="text-sm md:text-base dark:hover:bg-gray-700">Carte Bancaire</SelectItem>
                   <SelectItem value="transfer" className="text-sm md:text-base dark:hover:bg-gray-700">Virement</SelectItem>
@@ -332,7 +332,7 @@ export default function PaymentDialog({ credit, open, onOpenChange, onSuccess })
                 type="date"
                 value={paymentData.payment_date}
                 onChange={(e) => handleInputChange('payment_date', e.target.value)}
-                className="bg-background text-sm md:text-base h-10 md:h-12 dark:bg-gray-800 dark:text-white dark:border-gray-700"
+                className="bg-background text-sm md:text-base h-10 md:h-12 gray dark:text-white dark:border-gray-700"
               />
             </div>
 
@@ -342,7 +342,7 @@ export default function PaymentDialog({ credit, open, onOpenChange, onSuccess })
                 id="note"
                 value={paymentData.note}
                 onChange={(e) => handleInputChange('note', e.target.value)}
-                className="bg-background text-sm md:text-base h-10 md:h-12 dark:bg-gray-800 dark:text-white dark:border-gray-700"
+                className="bg-background text-sm md:text-base h-10 md:h-12 gray dark:text-white dark:border-gray-700"
                 placeholder="Note sur le paiement"
               />
             </div>

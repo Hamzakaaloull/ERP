@@ -51,7 +51,7 @@ export default function StockMovementDetail({ movement, onClose, onEdit }) {
   const imageUrl = movement.product ? getImageUrl(movement.product.photo) : null
 
   return (
-    <div className="flex flex-col f-100 dark:text-white">
+    <div className="flex flex-col overflow-y-scroll f-100 dark:text-white">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between pb-4 border-b">
         <div>

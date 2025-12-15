@@ -838,11 +838,11 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
                         <Input
                           id="quantity"
                           type="number"
-                          min="1"
+                         
                           max={selectedProduct.stock_quantity}
                           value={quantity}
                           onChange={(e) => setQuantity(parseInt(e.target.value))}
-                          className="bg-background"
+                          className="bg-background "
                         />
                       </div>
                       <div className="space-y-2">
@@ -1170,7 +1170,8 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
                             id="transportName"
                             value={transportName}
                             onChange={(e) => setTransportName(e.target.value)}
-                            className="bg-background text-sm"
+                            className="bg-background text-sm [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                             placeholder="Ex: Livraison à domicile, Transport rapide..."
                           />
                         </div>
@@ -1184,7 +1185,8 @@ export default function CreateSaleDialog({ onSuccess, onCancel }) {
                             
                             value={transportPrice}
                             onChange={(e) => setTransportPrice(e.target.value)}
-                            className="bg-background text-sm"
+                            className="bg-background text-sm  [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                             placeholder="0.00"
                           />
                         </div>

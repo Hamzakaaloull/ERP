@@ -144,7 +144,8 @@ export default function CategoryForm({ category, products, onSuccess, onCancel }
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Ex: Ciments et Mortiers"
                     required
-                    className="bg-background"
+                    className="bg-background [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
 
@@ -195,7 +196,8 @@ export default function CategoryForm({ category, products, onSuccess, onCancel }
                       placeholder="Rechercher un produit..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 bg-background mb-3"
+                      className="pl-10 bg-background mb-3 [&::-webkit-outer-spin-button]:appearance-none
+    [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
 

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, createElement, useMemo, useCallback } from 'react';
 import { gsap } from 'gsap';
+import { DotLottieReact } from '@/app/Login/page';
+import React from 'react';
 
 const TextType = ({
   text,
@@ -172,3 +174,14 @@ const TextType = ({
 };
 
 export default TextType;
+// Composant de chargement simple pour Lottie
+const LottieFallback = () => (
+  <DotLottieReact
+    src="https://lottie.host/9ac5cf07-7737-4e9c-9b96-449cb8cec538/cXC1yioKGJ.lottie"
+    loop={false}
+    autoplay
+    speed={1.5}
+    // duration={4000}
+    width={auto}
+    height={10} />
+);
